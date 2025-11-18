@@ -1,2 +1,48 @@
-/node_modules
-/dist
+# Node modules and dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output and generated folders
+dist/
+build/
+.cache/
+.temp/
+.tmp/
+.out/
+
+# Environment variables / Secrets
+.env
+.env.* 
+!.env.example
+
+# Logs
+*.log
+logs/
+debug.log
+error.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+nyc_output/
+
+# Node inspector
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript metadata
+*.tsbuildinfo
+
