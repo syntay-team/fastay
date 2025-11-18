@@ -1,5 +1,3 @@
-Perfeito! Aqui está a versão completa do README traduzida para português, mantendo o estilo e explicações detalhadas:
-
 # 🚀 Fastay.js
 
 Fastay é um framework moderno para backend construído sobre o **Express.js**, projetado para criar APIs de forma rápida, previsível e amigável para desenvolvedores.
@@ -32,22 +30,27 @@ npx fastay create-app minha-app
 ```
 
 Exemplo do CLI:
-
+```bash
 🚀 Fastay — Create a modern backend project
 ✔ Usar TypeScript? › Sim
 ✔ Escolha um ORM: › Nenhum
-
+````
 2. Entrar no projeto
-
+```bash
 cd minha-app
+```
+```bash
 npm run dev       # Iniciar servidor em desenvolvimento
+```
+```bash
 npm run dev:watch # Modo watch com reload automático
+```
 
 
 ---
 
 Estrutura do Projeto
-
+```bash
 minha-app/
 │
 ├── dist/                     # Código compilado para produção
@@ -79,29 +82,30 @@ minha-app/
 ├── package.json
 ├── tsconfig.json
 └── eslint.config.mjs
+```
 
 Explicação das pastas principais:
 
-src/api — Cada pasta representa um grupo de rotas. Todo route.ts dentro é registrado automaticamente.
+`src/api` — Cada pasta representa um grupo de rotas. Todo route.ts dentro é registrado automaticamente.
 
-src/middlewares — Middlewares personalizados, carregados automaticamente ou usados via createMiddleware.
+`src/middlewares` — Middlewares personalizados, carregados automaticamente ou usados via createMiddleware.
 
-src/services — Mantém a lógica de negócio separada das rotas (Opcional porém recomendado).
+`src/services` — Mantém a lógica de negócio separada das rotas (Opcional porém recomendado).
 
-src/utils — Helpers genéricos.
+`src/utils` — Helpers genéricos.
 
-src/index.ts — Bootstrap principal da aplicação com createApp.
+`src/index.ts` — Bootstrap principal da aplicação com createApp.
 
-dist/ — Código compilado para produção.
+`dist/` — Código compilado para produção.
 
-fastay.config.json — Configuração do build, compilador e rotas.
+`fastay.config.json` — Configuração do build, compilador e rotas.
 
 
 
 ---
 
-⚡ src/index.ts
-
+⚡ `src/index.ts`
+```bash
 import { createApp } from '@syntay/fastay';
 
 const port = 5555;
@@ -113,7 +117,7 @@ void (async () => {
     port: port
   });
 })();
-
+```
 
 ---
 
@@ -121,8 +125,9 @@ Opções do createApp
 
 createApp recebe um único objeto para configurar totalmente a aplicação Fastay.
 
-
-  apiDir?: string;               // Diretório contendo as rotas da API (default: 'src/api')
+```bash
+  apiDir?: string;               // Diretório contendo as rotas da API
+(default: 'src/api')
   baseRoute?: string;            // Caminho base para todas as rotas (default: '/api')
   port?: number;                 // Porta do servidor (default: 5000)
 
@@ -137,49 +142,61 @@ createApp recebe um único objeto para configurar totalmente a aplicação Fasta
       trustProxy?: boolean;                             // Considerar headers de proxy reverso
       locals?: Record<string, any>;                     // Variáveis globais para res.locals
 }
+```
 
 Exemplos:
 
 Aplicar middlewares globais
 
+```bash
 expressOptions: {
   middlewares: [cors(), helmet()],
 }
+```
 
 Configurar body parsers
 
+```bash
 expressOptions: {
   jsonOptions: { limit: '10mb' },
-  urlencodedOptions: { extended: true },
+  urlencodedOptions: { extended: true    },
 }
+```
 
 Servir arquivos estáticos
 
+```bash
 expressOptions: {
   static: { path: 'public', options: { maxAge: 3600000 } }
 }
+```
 
 Configurar views e locals
 
+```bash
 expressOptions: {
   views: { engine: 'pug', dir: 'views' },
   locals: { siteName: 'Fastay' }
 }
+```
 
 Handler de erro customizado
 
+```bash
 expressOptions: {
   errorHandler: (err, req, res, next) => {
     console.error(err);
     res.status(500).json({ message: 'Algo deu errado!' });
   }
 }
+```
 
 
 ---
 
-fastay.config.json
+`fastay.config.json`
 
+```bash
 {
   "entry": "src/index.ts",
   "outDir": "dist",
@@ -189,14 +206,15 @@ fastay.config.json
     "target": "es2020"
   }
 }
+```
 
-entry — Arquivo principal da aplicação.
+`entry` — Arquivo principal da aplicação.
 
-outDir — Diretório de saída do código compilado.
+`outDir` — Diretório de saída do código compilado.
 
-routesDir — Diretório opcional para rotas (default src/api).
+`routesDir` — Diretório opcional para rotas (default src/api).
 
-compiler — Opções para compilação TypeScript/ESBuild.
+`compiler` — Opções para compilação TypeScript/ESBuild.
 
 
 
@@ -206,6 +224,7 @@ Rotas da API
 
 Roteamento baseado em arquivos com sintaxe limpa:
 
+```bash
 import { Request } from '@syntay/fastay';
 
 export async function GET() {
@@ -215,6 +234,7 @@ export async function GET() {
 export async function POST(req: Request) {
   return { message: 'Hello World' };
 }
+```
 
 Cada método HTTP é exportado como função.
 
@@ -226,7 +246,7 @@ Suporta middlewares Express.
 
 ✅ Por que é melhor que Express puro:
 
-Sem boilerplate: não precisa chamar app.get(...) ou app.post(...) manualmente.
+Sem boilerplate: não precisa chamar `app.get(...)` ou `app.post(...)` manualmente.
 
 Separação limpa dos arquivos de rota: cada rota fica em um arquivo route.ts dentro de api ou outro diretório.
 
@@ -237,6 +257,7 @@ Fácil manutenção de projetos grandes: sem necessidade de registrar manualment
 
 1️⃣ Express.js
 
+```bash
 import express from 'express';
 
 const app = express();
@@ -258,6 +279,7 @@ app.use('/api/auth', (req, res, next) => {
 });
 
 app.listen(5000, () => console.log('Server running on port 5000'));
+```
 
 Pontos negativos do Express puro:
 
@@ -273,6 +295,7 @@ Escalabilidade de grandes projetos fica complicada.
 
 2️⃣ NestJS
 
+```bash
 import { Controller, Get, Post, Body } from '@nestjs/common';
 
 @Controller('api/hello')
@@ -287,6 +310,7 @@ export class HelloController {
     return { message: 'Hello POST World', body };
   }
 }
+```
 
 Características do NestJS:
 
@@ -304,6 +328,7 @@ Exige aprendizado de decorators, módulos e injeção de dependências.
 
 3️⃣ Fastay.js
 
+```bash
 import { Request } from '@syntay/fastay';
 
 // GET /api/hello
@@ -315,6 +340,7 @@ export async function GET() {
 export async function POST(req: Request) {
   return { message: 'Hello POST World' };
 }
+```
 
 Características do Fastay:
 
@@ -341,15 +367,18 @@ Middlewares
 
 Fastay permite middlewares auto-carregados e via createMiddleware:
 
+```bash
 import { Request, Response, Next } from '@syntay/fastay';
 
 export async function auth(req: Request, _res: Response, next: Next) {
   // Lógica de autenticação
   next();
 }
+```
 
 E crie um arquivo middleware.ts dentro da pasta src/middleware e use a função createMiddleware para configurar o seu middleware:
 
+```bash
 import { createMiddleware } from '@syntay/fastay';
 import { auth } from './auth';
 import { logger } from './logger';
@@ -358,7 +387,7 @@ export const middleware = createMiddleware({
   '/auth': [auth],
   '/admin': [logger],
 });
-
+```
 
 ---
 
@@ -383,4 +412,4 @@ Reduz boilerplate e aumenta a manutenção.
 
 
 Ideal para desenvolvedores que querem estrutura sem complicação.
-```
+
