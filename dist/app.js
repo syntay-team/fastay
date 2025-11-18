@@ -91,6 +91,10 @@ export async function createApp(opts) {
     const isMiddleware = await loadFastayMiddlewares(app);
     // health check
     app.get('/_health', (_, res) => res.json({ ok: true }));
+    app.use((_req, res, next) => {
+        res.setHeader('X-Powered-By', 'Syntay Engine');
+        next();
+    });
     // load routes
     // logger.group('Routes Loaded');
     const totalRoutes = await loadApiRoutes(app, baseRoute, apiDir);

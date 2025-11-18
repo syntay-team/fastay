@@ -8,6 +8,9 @@
     "build": "tsc -p tsconfig.build.json",
     "prepare": "npm run build"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "express": "^5.1.0",
     "pino": "^10.1.0",
