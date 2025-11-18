@@ -86,7 +86,7 @@ minha-app/
 └── eslint.config.mjs
 ```
 
-Explicação das pastas principais:
+**Explicação das pastas principais:**
 
 `src/api` — Cada pasta representa um grupo de rotas. Todo route.ts dentro é registrado automaticamente.
 
@@ -123,7 +123,7 @@ void (async () => {
 
 ---
 
-Opções do `createApp`
+**Opções do `createApp`**
 
 createApp recebe um único objeto para configurar totalmente a aplicação Fastay.
 
@@ -148,7 +148,7 @@ createApp recebe um único objeto para configurar totalmente a aplicação Fasta
 
 Exemplos:
 
-Aplicar middlewares globais
+**Aplicar middlewares globais**
 
 ```bash
 expressOptions: {
@@ -156,7 +156,7 @@ expressOptions: {
 }
 ```
 
-Configurar body parsers
+**Configurar body parsers**
 
 ```bash
 expressOptions: {
@@ -165,7 +165,7 @@ expressOptions: {
 }
 ```
 
-Servir arquivos estáticos
+**Servir arquivos estáticos**
 
 ```bash
 expressOptions: {
@@ -173,7 +173,7 @@ expressOptions: {
 }
 ```
 
-Configurar views e locals
+**Configurar views e locals**
 
 ```bash
 expressOptions: {
@@ -182,7 +182,7 @@ expressOptions: {
 }
 ```
 
-Handler de erro customizado
+**Handler de erro customizado**
 
 ```bash
 expressOptions: {
@@ -222,7 +222,7 @@ expressOptions: {
 
 ---
 
-Rotas da API
+**Rotas da API**
 
 Roteamento baseado em arquivos com sintaxe limpa:
 
@@ -246,7 +246,7 @@ Tipado e compatível com TypeScript.
 
 Suporta middlewares Express.
 
-✅ Por que é melhor que Express puro:
+**Por que é melhor que Express puro:**
 
 Sem boilerplate: não precisa chamar `app.get(...)` ou `app.post(...)` manualmente.
 
@@ -295,7 +295,7 @@ Escalabilidade de grandes projetos fica complicada.
 
 ---
 
-2️⃣ NestJS
+**1. NestJS**
 
 ```bash
 import { Controller, Get, Post, Body } from '@nestjs/common';
@@ -314,7 +314,7 @@ export class HelloController {
 }
 ```
 
-Características do NestJS:
+**Características do NestJS:**
 
 Baseado em decorators e classes.
 
@@ -328,7 +328,7 @@ Exige aprendizado de decorators, módulos e injeção de dependências.
 
 ---
 
-3️⃣ Fastay.js
+**2. Fastay.js**
 
 ```bash
 import { Request } from '@syntay/fastay';
@@ -344,7 +344,7 @@ export async function POST(req: Request) {
 }
 ```
 
-Características do Fastay:
+**Características do Fastay:**
 
 Baseado em arquivos, cada método HTTP é exportado.
 
@@ -365,7 +365,7 @@ Tipo-safe, clean e simples.
 
 ---
 
-Middlewares
+**Middlewares**
 
 Fastay permite middlewares auto-carregados e via createMiddleware:
 
@@ -378,7 +378,7 @@ export async function auth(req: Request, _res: Response, next: Next) {
 }
 ```
 
-E crie um arquivo middleware.ts dentro da pasta src/middleware e use a função createMiddleware para configurar o seu middleware:
+E crie um arquivo middleware.ts dentro da pasta `src/middleware` e use a função createMiddleware para configurar o seu middleware:
 
 ```bash
 import { createMiddleware } from '@syntay/fastay';
@@ -393,14 +393,14 @@ export const middleware = createMiddleware({
 
 ---
 
-📦 Fluxo de Request
+**Fluxo de Request**
 
-Cliente → Rota Fastay → Middleware → Handler da Rota → Service → Response
+*Cliente → Rota Fastay → Middleware → Handler da Rota → Service → Response*
 
 
 ---
 
-Conclusão
+**Conclusão**
 
 Fastay.js é um framework backend leve e TypeScript-first que:
 
