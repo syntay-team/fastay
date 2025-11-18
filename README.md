@@ -51,7 +51,7 @@ npm run dev:watch
 
 ---
 
-Estrutura do Projeto
+**Estrutura do Projeto**
 ```bash
 minha-app/
 │
@@ -146,9 +146,9 @@ createApp recebe um único objeto para configurar totalmente a aplicação Fasta
 }
 ```
 
-Exemplos:
+**Exemplos:**
 
-**Aplicar middlewares globais**
+Aplicar middlewares globais
 
 ```bash
 expressOptions: {
@@ -156,7 +156,7 @@ expressOptions: {
 }
 ```
 
-**Configurar body parsers**
+Configurar body parsers
 
 ```bash
 expressOptions: {
@@ -165,7 +165,7 @@ expressOptions: {
 }
 ```
 
-**Servir arquivos estáticos**
+Servir arquivos estáticos
 
 ```bash
 expressOptions: {
@@ -173,7 +173,7 @@ expressOptions: {
 }
 ```
 
-**Configurar views e locals**
+Configurar views e locals
 
 ```bash
 expressOptions: {
@@ -182,7 +182,7 @@ expressOptions: {
 }
 ```
 
-**Handler de erro customizado**
+Handler de erro customizado
 
 ```bash
 expressOptions: {
@@ -257,7 +257,7 @@ Auto-descoberta de rotas: Fastay detecta automaticamente os arquivos de rota e r
 Fácil manutenção de projetos grandes: sem necessidade de registrar manualmente centenas de rotas, mantendo organização clara.
 
 
-1️⃣ Express.js
+**1. Express.js**
 
 ```bash
 import express from 'express';
@@ -295,7 +295,7 @@ Escalabilidade de grandes projetos fica complicada.
 
 ---
 
-**1. NestJS**
+**2. NestJS**
 
 ```bash
 import { Controller, Get, Post, Body } from '@nestjs/common';
@@ -328,7 +328,7 @@ Exige aprendizado de decorators, módulos e injeção de dependências.
 
 ---
 
-**2. Fastay.js**
+**3. Fastay.js**
 
 ```bash
 import { Request } from '@syntay/fastay';
