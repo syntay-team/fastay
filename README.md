@@ -39,11 +39,13 @@ Exemplo do CLI:
 ```bash
 cd minha-app
 ```
+3. Iniciar servidor em desenvolvimento
 ```bash
-npm run dev       # Iniciar servidor em desenvolvimento
+npm run dev 
 ```
+4. Modo watch com reload automático
 ```bash
-npm run dev:watch # Modo watch com reload automático
+npm run dev:watch 
 ```
 
 
@@ -121,7 +123,7 @@ void (async () => {
 
 ---
 
-Opções do createApp
+Opções do `createApp`
 
 createApp recebe um único objeto para configurar totalmente a aplicação Fastay.
 
@@ -412,4 +414,25 @@ Reduz boilerplate e aumenta a manutenção.
 
 
 Ideal para desenvolvedores que querem estrutura sem complicação.
+
+---
+
+## 🔹 Contribuição
+
+Contribuições são bem-vindas!
+
+1. Faça um fork do projeto.
+2. Crie uma branch (`git checkout -b minha-feature`).
+3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`).
+4. Push para a branch (`git push origin minha-feature`).
+5. Abra um Pull Request.
+
+---
+
+## 🔹 Licença
+
+MIT © Syntay Team
+
+---
+
 
