@@ -29,6 +29,7 @@ O maior ponto forte é **rapidez e simplicidade**, ideal para projetos de backen
 
 ```bash
 npx fastay create-app minha-app
+```
 
 Exemplo do CLI:
 
