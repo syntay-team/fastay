@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.wrapMiddleware = wrapMiddleware;
-const logger_1 = require("../logger");
+import { logger } from '../logger.js';
 const color = {
     cyan: (s) => `\x1b[36m${s}\x1b[0m`,
     gray: (s) => `\x1b[90m${s}\x1b[0m`,
@@ -61,7 +58,7 @@ function validateMiddlewareCode(mw) {
 /**
  * Wrapper final
  */
-function wrapMiddleware(mw) {
+export function wrapMiddleware(mw) {
     const name = mw.name || 'anonymous';
     validateMiddlewareCode(mw);
     // retorna middleware "puro"
@@ -70,7 +67,7 @@ function wrapMiddleware(mw) {
             await mw(req, res, next);
         }
         catch (err) {
-            logger_1.logger.error(`[${name}] middleware error: ${err}`);
+            logger.error(`[${name}] middleware error: ${err}`);
             next(err);
         }
     };

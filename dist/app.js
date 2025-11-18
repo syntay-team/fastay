@@ -1,51 +1,102 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createApp = createApp;
-const express_1 = __importDefault(require("express"));
-const path_1 = __importDefault(require("path"));
-const router_1 = require("./router");
-const middleware_1 = require("./middleware");
-const logger_1 = require("./logger");
-const banner_1 = require("./banner");
-async function createApp(opts) {
-    const start = logger_1.logger.timeStart();
-    (0, banner_1.printBanner)();
+import express from 'express';
+import path from 'path';
+import { loadApiRoutes } from './router.js';
+import { loadFastayMiddlewares, createMiddleware, } from './middleware.js';
+import { logger } from './logger.js';
+import { printBanner } from './banner.js';
+/**
+ * Bootstraps and configures a Fastay application.
+ *
+ * Fastay automatically:
+ * - Discovers and registers routes defined in `apiDir`.
+ * - Applies both built-in and user-provided middlewares.
+ * - Exposes a health-check endpoint at `/_health`.
+ *
+ * @param opts - Configuration options for the Fastay application.
+ * @returns A Promise that resolves to an Express `Application` instance.
+ *
+ * @example
+ * ```ts
+ * import { createApp } from '@syntay/fastay';
+ * import cors from 'cors';
+ * import helmet from 'helmet';
+ *
+ * void (async () => {
+ *   await createApp({
+ *     apiDir: './src/api',
+ *     baseRoute: '/api',
+ *     port: 5555,
+ *     expressOptions: {
+ *       middlewares: [cors(), helmet()],
+ *     },
+ *   });
+ * })();
+ * ```
+ */
+export async function createApp(opts) {
+    const start = logger.timeStart();
+    printBanner();
     // logger.group('Fastay');
-    logger_1.logger.info('Initializing server...');
-    const apiDir = opts?.apiDir ?? path_1.default.resolve(process.cwd(), 'src', 'api');
+    logger.info('Initializing server...');
+    const apiDir = opts?.apiDir ?? path.resolve(process.cwd(), 'src', 'api');
     const baseRoute = opts?.baseRoute ?? '/api';
-    logger_1.logger.success(`API directory: ${apiDir}`);
-    logger_1.logger.success(`Base route: ${baseRoute}`);
-    logger_1.logger.success(`Local: http://localhost:${process.env.PORT || 5000}${baseRoute}`);
-    const app = (0, express_1.default)();
-    app.use(express_1.default.json());
+    logger.success(`API directory: ${apiDir}`);
+    logger.success(`Base route: ${baseRoute}`);
+    const app = express();
+    if (opts?.expressOptions) {
+        for (const [key, value] of Object.entries(opts.expressOptions)) {
+            // Se for array → assume middleware global
+            if (Array.isArray(value)) {
+                value.forEach((mw) => app.use(mw));
+            }
+            // Se o app tiver método com esse nome
+            else if (typeof app[key] === 'function') {
+                // TS-safe
+                app[key](value);
+            }
+            // special cases
+            else if (key === 'static' && value && typeof value === 'object') {
+                const v = value;
+                app.use(express.static(v.path, v.options));
+            }
+            else if (key === 'jsonOptions') {
+                app.use(express.json(value));
+            }
+            else if (key === 'urlencodedOptions') {
+                app.use(express.urlencoded(value));
+            }
+        }
+    }
+    app.use(express.json());
+    const defaltPort = opts?.port ? opts.port : 6000;
+    app.listen(defaltPort, () => {
+        logger.success(`Server running at http://localhost:${defaltPort}${baseRoute}`);
+    });
     // external middlewares
     if (opts?.expressOptions?.middlewares) {
-        logger_1.logger.group('Express Middlewares');
+        logger.group('Express Middlewares');
         for (const mw of opts.expressOptions.middlewares) {
-            logger_1.logger.gear(`Loaded: ${mw.name || 'anonymous'}`);
+            logger.gear(`Loaded: ${mw.name || 'anonymous'}`);
             app.use(mw);
         }
     }
     // Fastay middlewares
     if (opts?.middlewares) {
-        logger_1.logger.group('Fastay Middlewares');
-        const apply = (0, middleware_1.createMiddleware)(opts.middlewares);
+        logger.group('Fastay Middlewares');
+        const apply = createMiddleware(opts.middlewares);
         apply(app);
     }
     // automatic middlewares
-    logger_1.logger.group('Fastay Auto-Middlewares');
-    await (0, middleware_1.loadFastayMiddlewares)(app);
+    // logger.group('Fastay Auto-Middlewares');
+    const isMiddleware = await loadFastayMiddlewares(app);
     // health check
     app.get('/_health', (_, res) => res.json({ ok: true }));
     // load routes
     // logger.group('Routes Loaded');
-    const totalRoutes = await (0, router_1.loadApiRoutes)(app, apiDir, baseRoute);
-    logger_1.logger.success(`Total routes loaded: ${totalRoutes}`);
-    const time = logger_1.logger.timeEnd(start);
-    logger_1.logger.success(`Boot completed in ${time}ms`);
+    const totalRoutes = await loadApiRoutes(app, baseRoute, apiDir);
+    logger.success(`Total routes loaded: ${totalRoutes}`);
+    // app.use(errorHandler);
+    const time = logger.timeEnd(start);
+    logger.success(`Boot completed in ${time}ms`);
     return app;
 }

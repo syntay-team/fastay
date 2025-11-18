@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { Application, Request, Response, NextFunction } from 'express';
-import { logger } from './logger';
+import { logger } from './logger.js';
 
 /**
  * Converte caminho do arquivo em rota Express (somente arquivos route.ts)
@@ -54,12 +54,34 @@ function wrapHandler(fn: Function, routePath: string, filePath: string) {
       return res.json(result);
     } catch (err: any) {
       const stack = err?.stack?.split('\n').slice(0, 3).join('\n') || '';
-      logger.error(
-        `✗ Runtime Error in route [${req.method} ${routePath}]\n` +
-          `  File: ${filePath}\n` +
-          `  Message: ${err.message || 'Unknown error'}\n` +
-          `  Stack: ${stack}`
-      );
+      // logger.error(
+      //   `✗ Runtime Error in route [${req.method} ${routePath}]\n` +
+      //     `  File: ${filePath}\n` +
+      //     `  ${err.name}: ${err.message || 'Unknown error'}\n` +
+      //     `  Stack: ${stack}`
+      // );
+
+      let fileInfo = '';
+      if (err.stack) {
+        const stackLine = err.stack.split('\n')[1]; // pega primeira linha depois do erro
+        const match = stackLine.match(/\((.*):(\d+):(\d+)\)/);
+        if (match) {
+          const [_, file, line, col] = match;
+          fileInfo = `${file}:${line}:${col}`;
+
+          // Tenta mostrar o trecho da linha que deu erro
+          if (fs.existsSync(file)) {
+            const codeLines = fs.readFileSync(file, 'utf-8').split('\n');
+            const codeSnippet = codeLines[parseInt(line) - 1].trim();
+            fileInfo += ` → ${codeSnippet}`;
+          }
+        }
+      }
+
+      // logger.group(`✗ Runtime Error in route  [${req.method} ${routePath}]`);
+      logger.error(`${err.name}: ${err.message}`);
+      if (fileInfo) logger.error(`Location: ${fileInfo}`);
+
       next(err);
     }
   };
@@ -70,9 +92,13 @@ function wrapHandler(fn: Function, routePath: string, filePath: string) {
  */
 export async function loadApiRoutes(
   app: Application,
-  apiDir: string,
-  baseRoute: string
+  baseRoute: string,
+  apiDirectory: string
 ) {
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  const apiDir = path.join(process.cwd(), isDev ? apiDirectory : 'dist/api');
+
   if (!fs.existsSync(apiDir)) return 0;
 
   const files = collectFiles(apiDir);
@@ -97,6 +123,7 @@ export async function loadApiRoutes(
         'OPTIONS',
         'HEAD',
       ];
+
       for (const m of httpMethods) {
         if (typeof mod[m] === 'function') {
           (app as any)[m.toLowerCase()](
@@ -115,11 +142,32 @@ export async function loadApiRoutes(
       }
     } catch (err: any) {
       const stack = err?.stack?.split('\n').slice(0, 3).join('\n') || '';
-      logger.error(
-        `✗ Boot Error importing ${file}\n` +
-          `  Message: ${err.message || 'Unknown error'}\n` +
-          `  Stack: ${stack}`
-      );
+      // logger.error(
+      //   `✗ Boot Error importing ${file}\n` +
+      //     `  Message: ${err.message || 'Unknown error'}\n` +
+      //     `  Stack: ${stack}`
+      // );
+
+      let fileInfo = '';
+      if (err.stack) {
+        const stackLine = err.stack.split('\n')[1]; // pega primeira linha depois do erro
+        const match = stackLine.match(/\((.*):(\d+):(\d+)\)/);
+        if (match) {
+          const [_, file, line, col] = match;
+          fileInfo = `${file}:${line}:${col}`;
+
+          // Tenta mostrar o trecho da linha que deu erro
+          if (fs.existsSync(file)) {
+            const codeLines = fs.readFileSync(file, 'utf-8').split('\n');
+            const codeSnippet = codeLines[parseInt(line) - 1].trim();
+            fileInfo += ` → ${codeSnippet}`;
+          }
+        }
+      }
+
+      // logger.group(`✗ Boot Error importing ${file}`);
+      logger.error(`${err.name}: ${err.message}`);
+      if (fileInfo) logger.error(`Location: ${fileInfo}`);
     }
   }
 

@@ -1,4 +1,4 @@
-import { logger } from './logger';
+import { logger } from './logger.js';
 
 export function printBanner() {
   const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;

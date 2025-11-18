@@ -1,13 +1,7 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.logger = void 0;
-const pino_1 = __importDefault(require("pino"));
-const pino_pretty_1 = __importDefault(require("pino-pretty"));
+import pino from 'pino';
+import pretty from 'pino-pretty';
 // stream configurado para remover INFO:, timestamps e etc
-const stream = (0, pino_pretty_1.default)({
+const stream = pretty({
     colorize: true,
     ignore: 'pid,hostname,time,level',
     levelFirst: false,
@@ -19,7 +13,7 @@ const stream = (0, pino_pretty_1.default)({
         return typeof msg === 'string' ? msg : String(msg);
     },
 });
-const base = (0, pino_1.default)({
+const base = pino({
     level: 'info',
     timestamp: false, // remove [HH:mm:ss]
     base: undefined, // remove pid, hostname
@@ -39,7 +33,7 @@ const ICONS = {
     error: '✗',
     gear: '⚙️',
 };
-exports.logger = {
+export const logger = {
     info: (msg) => base.info(` ${colors.white(ICONS.info)} ${colors.white(msg)}`),
     warn: (msg) => base.info(` ${colors.red('⚠')} ${colors.white(msg)}`),
     error: (msg) => base.info(` ${colors.red(ICONS.error)} ${colors.white(msg)}`),

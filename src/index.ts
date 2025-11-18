@@ -1,4 +1,4 @@
-export { createApp } from './app';
-export { createMiddleware } from './middleware';
-export type { CreateAppOptions } from './app';
-export * from './types';
+export { createApp } from './app.js';
+export { createMiddleware } from './middleware.js';
+export type { CreateAppOptions } from './app.js';
+export { Request, Response, Next } from './types';
