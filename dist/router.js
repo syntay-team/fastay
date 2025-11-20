@@ -92,10 +92,9 @@ function wrapHandler(fn, routePath, filePath) {
                         res.cookie(name, data.value, data.options || {});
                     }
                 }
-                if (typeof typedResult.status === 'number') {
-                    return res.status(typedResult.status).json(typedResult.body ?? {});
-                }
-                return res.json(result);
+                const statusCode = typeof result.status === 'number' ? result.status : 200;
+                const body = result.body ?? result; // se não existir body, retorna o objeto inteiro
+                return res.status(statusCode).json(body);
             }
             // Suporte a retorno simples
             if (typeof result === 'string')
@@ -128,26 +127,25 @@ export async function loadApiRoutes(app, baseRoute, apiDirectory) {
             continue;
         try {
             const fileUrl = pathToFileURL(file).href;
-            // const mod = await import(fileUrl);
-            const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-            const expressMap = {
-                GET: app.get.bind(app),
-                POST: app.post.bind(app),
-                PUT: app.put.bind(app),
-                PATCH: app.patch.bind(app),
-                DELETE: app.delete.bind(app),
-            };
-            const mod = (await import(fileUrl));
-            for (const method of httpMethods) {
-                const handler = mod[method];
-                if (typeof handler === 'function') {
-                    expressMap[method](route, wrapHandler(handler, route, file));
+            const mod = await import(fileUrl);
+            const httpMethods = [
+                'GET',
+                'POST',
+                'PUT',
+                'DELETE',
+                'PATCH',
+                'OPTIONS',
+                'HEAD',
+            ];
+            for (const m of httpMethods) {
+                if (typeof mod[m] === 'function') {
+                    app[m.toLowerCase()](route, wrapHandler(mod[m], route, file));
                     cont++;
-                    logger.success(`Route: [${method}] ${route}`);
+                    logger.success(`Route: [${m}] ${route}`);
                 }
             }
-            if (typeof mod.default === 'function') {
-                expressMap.GET(route, wrapHandler(mod.default, route, file));
+            if (mod.default && typeof mod.default === 'function') {
+                app.get(route, wrapHandler(mod.default, route, file));
                 cont++;
                 logger.success(`Route: [GET] ${route}`);
             }

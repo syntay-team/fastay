@@ -1,11 +1,8 @@
 import { Request as ExpressRequest, Response as ExpressResponse, NextFunction } from 'express';
-/**
- * Tipos do Express reexportados para os usuários
- */
+import { RequestCookies } from './fastay';
 export type Request = ExpressRequest;
 export type Response = ExpressResponse;
 export type Next = NextFunction;
-export {};
 declare global {
     type FastayResponse = {
         status?: number;
@@ -26,3 +23,11 @@ declare global {
     };
 }
 export type RouteHandler = (() => FastayResponse | any) | ((req: Request) => FastayResponse | any) | ((req: Request, res: Response) => FastayResponse | any);
+export interface CookieItem {
+    value: string;
+}
+declare module 'express-serve-static-core' {
+    interface Request {
+        typedCookies: RequestCookies | any;
+    }
+}

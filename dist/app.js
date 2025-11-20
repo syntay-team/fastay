@@ -4,6 +4,7 @@ import { loadApiRoutes } from './router.js';
 import { loadFastayMiddlewares, createMiddleware, } from './middleware.js';
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
+import { RequestCookies } from './utils/cookies.js';
 /**
  * Bootstraps and configures a Fastay application.
  *
@@ -91,8 +92,9 @@ export async function createApp(opts) {
     const isMiddleware = await loadFastayMiddlewares(app);
     // health check
     app.get('/_health', (_, res) => res.json({ ok: true }));
-    app.use((_req, res, next) => {
+    app.use((req, res, next) => {
         res.setHeader('X-Powered-By', 'Syntay Engine');
+        req.cookies = new RequestCookies(req.headers.cookie);
         next();
     });
     // load routes

@@ -64,7 +64,6 @@ function wrapHandler(fn: Function, routePath: string, filePath: string) {
         const typedResult = result as {
           status?: number;
           body?: any;
-
           cookies?: Record<string, { value: string; options?: any }>;
           headers?: Record<string, string>;
           redirect?: string;
@@ -124,11 +123,11 @@ function wrapHandler(fn: Function, routePath: string, filePath: string) {
           }
         }
 
-        if (typeof typedResult.status === 'number') {
-          return res.status(typedResult.status).json(typedResult.body ?? {});
-        }
+        const statusCode =
+          typeof result.status === 'number' ? result.status : 200;
 
-        return res.json(result);
+        const body = result.body ?? result; // se não existir body, retorna o objeto inteiro
+        return res.status(statusCode).json(body);
       }
 
       // Suporte a retorno simples

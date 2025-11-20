@@ -10,6 +10,7 @@ import { logger } from './logger.js';
 import { printBanner } from './banner.js';
 import type { ServeStaticOptions } from 'serve-static';
 import { Next, Request, Response } from './types/index.js';
+import { RequestCookies } from './utils/cookies.js';
 
 /**
  * Express configuration options applied automatically by Fastay
@@ -214,8 +215,9 @@ export async function createApp(opts?: CreateAppOptions) {
 
   // health check
   app.get('/_health', (_, res) => res.json({ ok: true }));
-  app.use((_req: Request, res: Response, next: Next) => {
+  app.use((req: Request, res: Response, next: Next) => {
     res.setHeader('X-Powered-By', 'Syntay Engine');
+    (req as any).cookies = new RequestCookies(req.headers.cookie);
     next();
   });
 
