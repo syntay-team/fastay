@@ -42,6 +42,62 @@ function wrapHandler(fn, routePath, filePath) {
                 return;
             if (result === undefined)
                 return;
+            // Suporte a status e cookies customizado
+            // if (
+            //   typeof result === 'object' &&
+            //   'status' in result &&
+            //   'body' in result &&
+            //   typeof result.status === 'number'
+            // ) {
+            //   return res.status(result.status).json(result.body);
+            // }
+            if (typeof result === 'object' && result !== null) {
+                const typedResult = result;
+                // redirect
+                if (typedResult.redirect) {
+                    return res.redirect(typedResult.status ?? 302, typedResult.redirect);
+                }
+                //headers
+                if (typedResult.headers) {
+                    for (const [h, v] of Object.entries(typedResult.headers)) {
+                        res.setHeader(h, v);
+                    }
+                }
+                //file
+                if (typedResult.file) {
+                    const { path, filename, options } = typedResult.file;
+                    if (filename) {
+                        return res.download(path, filename, options);
+                    }
+                    return res.download(path, options);
+                }
+                // stream
+                if (typedResult.stream) {
+                    if (typedResult.headers) {
+                        for (const [h, v] of Object.entries(typedResult.headers))
+                            res.setHeader(h, v);
+                    }
+                    return typedResult.stream.pipe(res);
+                }
+                // raw
+                if (typedResult.raw) {
+                    if (typedResult.headers) {
+                        for (const [h, v] of Object.entries(typedResult.headers))
+                            res.setHeader(h, v);
+                    }
+                    return res.status(typedResult.status ?? 200).send(typedResult.raw);
+                }
+                if (typedResult.cookies) {
+                    for (const [name, data] of Object.entries(typedResult.cookies)) {
+                        res.cookie(name, data.value, data.options || {});
+                    }
+                }
+                if (typeof typedResult.status === 'number') {
+                    return res.status(typedResult.status).json(typedResult.body ?? {});
+                }
+                return res.json(result);
+            }
+            // Suporte a retorno simples
             if (typeof result === 'string')
                 return res.send(result);
             if (typeof result === 'number')
@@ -50,31 +106,7 @@ function wrapHandler(fn, routePath, filePath) {
         }
         catch (err) {
             const stack = err?.stack?.split('\n').slice(0, 3).join('\n') || '';
-            // logger.error(
-            //   `✗ Runtime Error in route [${req.method} ${routePath}]\n` +
-            //     `  File: ${filePath}\n` +
-            //     `  ${err.name}: ${err.message || 'Unknown error'}\n` +
-            //     `  Stack: ${stack}`
-            // );
-            let fileInfo = '';
-            if (err.stack) {
-                const stackLine = err.stack.split('\n')[1]; // pega primeira linha depois do erro
-                const match = stackLine.match(/\((.*):(\d+):(\d+)\)/);
-                if (match) {
-                    const [_, file, line, col] = match;
-                    fileInfo = `${file}:${line}:${col}`;
-                    // Tenta mostrar o trecho da linha que deu erro
-                    if (fs.existsSync(file)) {
-                        const codeLines = fs.readFileSync(file, 'utf-8').split('\n');
-                        const codeSnippet = codeLines[parseInt(line) - 1].trim();
-                        fileInfo += ` → ${codeSnippet}`;
-                    }
-                }
-            }
-            // logger.group(`✗ Runtime Error in route  [${req.method} ${routePath}]`);
             logger.error(`${err.name}: ${err.message}`);
-            if (fileInfo)
-                logger.error(`Location: ${fileInfo}`);
             next(err);
         }
     };
@@ -96,25 +128,26 @@ export async function loadApiRoutes(app, baseRoute, apiDirectory) {
             continue;
         try {
             const fileUrl = pathToFileURL(file).href;
-            const mod = await import(fileUrl);
-            const httpMethods = [
-                'GET',
-                'POST',
-                'PUT',
-                'DELETE',
-                'PATCH',
-                'OPTIONS',
-                'HEAD',
-            ];
-            for (const m of httpMethods) {
-                if (typeof mod[m] === 'function') {
-                    app[m.toLowerCase()](route, wrapHandler(mod[m], route, file));
+            // const mod = await import(fileUrl);
+            const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+            const expressMap = {
+                GET: app.get.bind(app),
+                POST: app.post.bind(app),
+                PUT: app.put.bind(app),
+                PATCH: app.patch.bind(app),
+                DELETE: app.delete.bind(app),
+            };
+            const mod = (await import(fileUrl));
+            for (const method of httpMethods) {
+                const handler = mod[method];
+                if (typeof handler === 'function') {
+                    expressMap[method](route, wrapHandler(handler, route, file));
                     cont++;
-                    logger.success(`Route: [${m}] ${route}`);
+                    logger.success(`Route: [${method}] ${route}`);
                 }
             }
-            if (mod.default && typeof mod.default === 'function') {
-                app.get(route, wrapHandler(mod.default, route, file));
+            if (typeof mod.default === 'function') {
+                expressMap.GET(route, wrapHandler(mod.default, route, file));
                 cont++;
                 logger.success(`Route: [GET] ${route}`);
             }
