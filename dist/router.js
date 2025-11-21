@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { logger } from './logger.js';
+import chokidar from 'chokidar';
+import importFresh from 'import-fresh';
 /**
  * Converte caminho do arquivo em rota Express (somente arquivos route.ts)
  */
@@ -109,6 +111,59 @@ function wrapHandler(fn, routePath, filePath) {
             next(err);
         }
     };
+}
+export function watchApiRoutes(app, apiDir, baseRoute) {
+    const watcher = chokidar.watch(apiDir, {
+        ignoreInitial: true,
+        persistent: true,
+    });
+    watcher.on('change', (filePath) => {
+        const route = filePathToRoute(apiDir, filePath, baseRoute);
+        if (!route)
+            return;
+        // Remove rota antiga
+        const stack = app._router.stack;
+        for (let i = stack.length - 1; i >= 0; i--) {
+            const layer = stack[i];
+            if (layer.route && layer.route.path === route) {
+                stack.splice(i, 1);
+                logger.info(`🟡 Route removed: ${route}`);
+            }
+        }
+        try {
+            // Importa o módulo fresco
+            const mod = importFresh(filePath);
+            // Re-aplica os métodos HTTP
+            const httpMethods = [
+                'GET',
+                'POST',
+                'PUT',
+                'DELETE',
+                'PATCH',
+                'OPTIONS',
+                'HEAD',
+            ];
+            for (const m of httpMethods) {
+                if (typeof mod[m] === 'function') {
+                    app[m.toLowerCase()](route, wrapHandler(mod[m], route, filePath));
+                    logger.success(`🔄 Route reloaded: [${m}] ${route}`);
+                }
+            }
+            if (mod.default && typeof mod.default === 'function') {
+                app.get(route, wrapHandler(mod.default, route, filePath));
+                logger.success(`🔄 Route reloaded: [GET] ${route}`);
+            }
+        }
+        catch (err) {
+            logger.error(`Error reloading route ${route}: ${err.message}`);
+        }
+    });
+    watcher.on('add', (filePath) => {
+        // Para adicionar novas rotas sem reiniciar
+        logger.info(`🟢 New file detected: ${filePath}`);
+        // Poderíamos chamar loadApiRoutes apenas para este arquivo
+    });
+    logger.info('Watching API directory for changes...');
 }
 /**
  * Carrega todas as rotas do diretório apiDir

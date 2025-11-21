@@ -75,6 +75,15 @@ export type CreateAppOptions = {
      * Default: "/api"
      */
     baseRoute?: string;
+    enableCors?: {
+        allowAnyOrigin?: boolean;
+        cookieOrigins?: string[];
+        credentials?: boolean;
+        methods?: string;
+        headers?: string;
+        exposedHeaders?: string;
+        maxAge?: number;
+    };
     /**
      * Port on which `.listen()` will run the server.
      * Default: 3000

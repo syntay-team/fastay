@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'path';
-import { loadApiRoutes } from './router.js';
+import { loadApiRoutes, watchApiRoutes } from './router.js';
 import { loadFastayMiddlewares, createMiddleware, } from './middleware.js';
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
@@ -95,6 +95,34 @@ export async function createApp(opts) {
     app.use((req, res, next) => {
         res.setHeader('X-Powered-By', 'Syntay Engine');
         req.cookies = new RequestCookies(req.headers.cookie);
+        const corsOpts = opts?.enableCors || {};
+        // Determina a origem
+        let origin = '*';
+        if (corsOpts.credentials && corsOpts.cookieOrigins?.length) {
+            // Se a origem estiver na lista de cookieOrigins, permite cookies
+            if (req.headers.origin &&
+                corsOpts.cookieOrigins.includes(req.headers.origin)) {
+                origin = req.headers.origin;
+            }
+            else {
+                origin = ''; // bloqueia cookies para outras origens
+            }
+        }
+        else if (!corsOpts.credentials && corsOpts.allowAnyOrigin) {
+            origin = '*';
+        }
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', corsOpts.credentials ? 'true' : 'false');
+        res.setHeader('Access-Control-Allow-Methods', corsOpts.methods || 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', corsOpts.headers || 'Content-Type, Authorization');
+        if (corsOpts.exposedHeaders) {
+            res.setHeader('Access-Control-Expose-Headers', corsOpts.exposedHeaders);
+        }
+        if (corsOpts.maxAge) {
+            res.setHeader('Access-Control-Max-Age', corsOpts.maxAge.toString());
+        }
+        if (req.method === 'OPTIONS')
+            return res.sendStatus(204);
         next();
     });
     // load routes
@@ -104,5 +132,6 @@ export async function createApp(opts) {
     // app.use(errorHandler);
     const time = logger.timeEnd(start);
     logger.success(`Boot completed in ${time}ms`);
+    watchApiRoutes(app, apiDir, baseRoute);
     return app;
 }

@@ -25,3 +25,4 @@ export class RequestCookies {
         return obj;
     }
 }
+export const cookies = RequestCookies;

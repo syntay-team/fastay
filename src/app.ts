@@ -97,6 +97,52 @@ export type CreateAppOptions = {
   baseRoute?: string;
 
   /**
+   * Configuration to enable CORS (Cross-Origin Resource Sharing) in Fastay.
+   */
+  enableCors?: {
+    /**
+     * If true, permite requisições de qualquer origem.
+     * Default: false
+     */
+    allowAnyOrigin?: boolean;
+
+    /**
+     * Lista de origens específicas permitidas para envio de cookies.
+     * Exemplo: ["http://localhost:3000", "https://meusite.com"]
+     */
+    cookieOrigins?: string[];
+
+    /**
+     * Se true, habilita envio de cookies cross-origin.
+     * Default: false
+     */
+    credentials?: boolean;
+
+    /**
+     * Lista de métodos HTTP permitidos, separados por vírgula.
+     * Default: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+     */
+    methods?: string;
+
+    /**
+     * Lista de cabeçalhos permitidos na requisição.
+     * Default: "Content-Type, Authorization"
+     */
+    headers?: string;
+
+    /**
+     * Cabeçalhos expostos ao cliente.
+     * Exemplo: ["X-Custom-Header"]
+     */
+    exposedHeaders?: string;
+
+    /**
+     * Tempo máximo de cache para requisições prévias (preflight), em segundos.
+     */
+    maxAge?: number;
+  };
+
+  /**
    * Port on which `.listen()` will run the server.
    * Default: 3000
    */
@@ -218,6 +264,49 @@ export async function createApp(opts?: CreateAppOptions) {
   app.use((req: Request, res: Response, next: Next) => {
     res.setHeader('X-Powered-By', 'Syntay Engine');
     (req as any).cookies = new RequestCookies(req.headers.cookie);
+
+    const corsOpts = opts?.enableCors || {};
+
+    // Determina a origem
+    let origin = '*';
+
+    if (corsOpts.credentials && corsOpts.cookieOrigins?.length) {
+      // Se a origem estiver na lista de cookieOrigins, permite cookies
+      if (
+        req.headers.origin &&
+        corsOpts.cookieOrigins.includes(req.headers.origin)
+      ) {
+        origin = req.headers.origin;
+      } else {
+        origin = ''; // bloqueia cookies para outras origens
+      }
+    } else if (!corsOpts.credentials && corsOpts.allowAnyOrigin) {
+      origin = '*';
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader(
+      'Access-Control-Allow-Credentials',
+      corsOpts.credentials ? 'true' : 'false'
+    );
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      corsOpts.methods || 'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      corsOpts.headers || 'Content-Type, Authorization'
+    );
+
+    if (corsOpts.exposedHeaders) {
+      res.setHeader('Access-Control-Expose-Headers', corsOpts.exposedHeaders);
+    }
+
+    if (corsOpts.maxAge) {
+      res.setHeader('Access-Control-Max-Age', corsOpts.maxAge.toString());
+    }
+
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });
 

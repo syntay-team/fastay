@@ -7,3 +7,4 @@ export declare class RequestCookies {
     has(name: string): boolean;
     all(): Record<string, string>;
 }
+export declare const cookies: typeof RequestCookies;
