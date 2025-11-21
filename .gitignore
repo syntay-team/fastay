@@ -6,6 +6,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Build output and generated folders
+dist/
 .cache/
 .temp/
 .tmp/
