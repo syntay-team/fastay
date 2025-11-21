@@ -7,7 +7,6 @@ export declare function filePathToRoute(apiDir: string, filePath: string, baseRo
  * Retorna todos arquivos .ts/.js recursivamente
  */
 export declare function collectFiles(dir: string): string[];
-export declare function watchApiRoutes(app: Application, apiDir: string, baseRoute: string): void;
 /**
  * Carrega todas as rotas do diretório apiDir
  */

@@ -75,13 +75,43 @@ export type CreateAppOptions = {
      * Default: "/api"
      */
     baseRoute?: string;
+    /**
+     * Configuration to enable CORS (Cross-Origin Resource Sharing) in Fastay.
+     */
     enableCors?: {
+        /**
+         * If true, permite requisições de qualquer origem.
+         * Default: false
+         */
         allowAnyOrigin?: boolean;
+        /**
+         * Lista de origens específicas permitidas para envio de cookies.
+         * Exemplo: ["http://localhost:3000", "https://meusite.com"]
+         */
         cookieOrigins?: string[];
+        /**
+         * Se true, habilita envio de cookies cross-origin.
+         * Default: false
+         */
         credentials?: boolean;
+        /**
+         * Lista de métodos HTTP permitidos, separados por vírgula.
+         * Default: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+         */
         methods?: string;
+        /**
+         * Lista de cabeçalhos permitidos na requisição.
+         * Default: "Content-Type, Authorization"
+         */
         headers?: string;
+        /**
+         * Cabeçalhos expostos ao cliente.
+         * Exemplo: ["X-Custom-Header"]
+         */
         exposedHeaders?: string;
+        /**
+         * Tempo máximo de cache para requisições prévias (preflight), em segundos.
+         */
         maxAge?: number;
     };
     /**

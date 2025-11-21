@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { loadApiRoutes } from './router.js';
 import {
@@ -9,8 +9,9 @@ import {
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
 import type { ServeStaticOptions } from 'serve-static';
-import { Next, Request, Response } from './types/index.js';
+
 import { RequestCookies } from './utils/cookies.js';
+import { formDataMiddleware } from './utils/formDataMiddleware.js';
 
 /**
  * Express configuration options applied automatically by Fastay
@@ -248,6 +249,9 @@ export async function createApp(opts?: CreateAppOptions) {
     }
   }
 
+  // FormData middleware
+  app.use(formDataMiddleware());
+
   // Fastay middlewares
   if (opts?.middlewares) {
     logger.group('Fastay Middlewares');
@@ -261,7 +265,7 @@ export async function createApp(opts?: CreateAppOptions) {
 
   // health check
   app.get('/_health', (_, res) => res.json({ ok: true }));
-  app.use((req: Request, res: Response, next: Next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Powered-By', 'Syntay Engine');
     (req as any).cookies = new RequestCookies(req.headers.cookie);
 

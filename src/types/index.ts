@@ -35,6 +35,7 @@ export interface Request extends ExpressRequest {
    * Represents the cookies sent in a request.
    */
   cookies: RequestCookies;
+  formData: () => Promise<FormData>;
   // params:
   // query:
 }

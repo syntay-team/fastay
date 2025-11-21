@@ -1,10 +1,11 @@
 import express from 'express';
 import path from 'path';
-import { loadApiRoutes, watchApiRoutes } from './router.js';
+import { loadApiRoutes } from './router.js';
 import { loadFastayMiddlewares, createMiddleware, } from './middleware.js';
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
 import { RequestCookies } from './utils/cookies.js';
+import { formDataMiddleware } from './utils/formDataMiddleware.js';
 /**
  * Bootstraps and configures a Fastay application.
  *
@@ -81,6 +82,8 @@ export async function createApp(opts) {
             app.use(mw);
         }
     }
+    // FormData middleware
+    app.use(formDataMiddleware());
     // Fastay middlewares
     if (opts?.middlewares) {
         logger.group('Fastay Middlewares');
@@ -132,6 +135,5 @@ export async function createApp(opts) {
     // app.use(errorHandler);
     const time = logger.timeEnd(start);
     logger.success(`Boot completed in ${time}ms`);
-    watchApiRoutes(app, apiDir, baseRoute);
     return app;
 }
