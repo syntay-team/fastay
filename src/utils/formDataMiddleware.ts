@@ -8,11 +8,33 @@ type FileInfo = {
   size: number;
   buffer: Buffer;
 };
-type FileMap = Record<string, FileInfo[]>;
+type FileMap = Record<string, File[]>;
+
+// Classe File compatível com a do browser
+export class File {
+  name: string;
+  type: string;
+  size: number;
+  buffer: Buffer;
+
+  constructor(file: FileInfo) {
+    this.name = file.filename;
+    this.type = file.mimeType;
+    this.size = file.size;
+    this.buffer = file.buffer;
+  }
+
+  arrayBuffer() {
+    return this.buffer.buffer.slice(
+      this.buffer.byteOffset,
+      this.buffer.byteOffset + this.buffer.byteLength
+    );
+  }
+}
 
 export function formDataMiddleware() {
   return function (req: any, res: any, next: any) {
-    if (typeof req.formData === 'function') return next(); // evita registrar duas vezes
+    if (typeof req.formData === 'function') return next();
 
     req.formData = () =>
       new Promise((resolve, reject) => {
@@ -39,13 +61,13 @@ export function formDataMiddleware() {
           file.on('end', () => {
             const buffer = Buffer.concat(chunks);
 
-            const fileObj: FileInfo = {
+            const fileObj = new File({
               filename: info.filename,
               encoding: info.encoding,
               mimeType: info.mimeType,
               size: buffer.length,
               buffer,
-            };
+            });
 
             if (!files[name]) files[name] = [];
             files[name].push(fileObj);
@@ -74,8 +96,8 @@ function createFormDataLike(fields: FieldMap, files: FileMap) {
 
     getAll(key: string) {
       if (files[key]) return files[key];
-      const v = fields[key];
-      return Array.isArray(v) ? v : v ? [v] : [];
+      const val = fields[key];
+      return Array.isArray(val) ? val : val ? [val] : [];
     },
 
     has(key: string) {
@@ -83,8 +105,7 @@ function createFormDataLike(fields: FieldMap, files: FileMap) {
     },
 
     append(key: string, value: any) {
-      if (value instanceof Buffer || value?.buffer instanceof Buffer) {
-        // arquivo
+      if (value instanceof File) {
         if (!files[key]) files[key] = [];
         files[key].push(value);
         return;
@@ -100,7 +121,7 @@ function createFormDataLike(fields: FieldMap, files: FileMap) {
     },
 
     set(key: string, value: any) {
-      if (value instanceof Buffer || value?.buffer instanceof Buffer) {
+      if (value instanceof File) {
         files[key] = [value];
         delete fields[key];
         return;
