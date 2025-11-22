@@ -31,7 +31,6 @@
     "busboy": "^1.6.0",
     "chokidar": "^4.0.3",
     "express": "^5.1.0",
-    "@syntay/fastay": "../fastay",
     "import-fresh": "^3.3.1",
     "pino": "^10.1.0",
     "pino-pretty": "^13.1.2"
