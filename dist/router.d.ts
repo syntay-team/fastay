@@ -11,3 +11,4 @@ export declare function collectFiles(dir: string): string[];
  * Carrega todas as rotas do diretório apiDir
  */
 export declare function loadApiRoutes(app: Application, baseRoute: string, apiDirectory: string): Promise<number>;
+//# sourceMappingURL=router.d.ts.map

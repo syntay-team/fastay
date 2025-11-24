@@ -1,6 +1,6 @@
 {
   "name": "@syntay/fastay",
-  "version": "0.1.8",
+  "version": "0.2.5",
   "description": "Framework backend moderno baseado em Express.js, para criar APIs rapidamente",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,6 +27,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "busboy": "^1.6.0",
     "chokidar": "^4.0.3",

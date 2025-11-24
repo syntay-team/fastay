@@ -4,3 +4,4 @@ export type MiddlewareFn = (req: Request, res: Response, next: NextFunction) => 
  * Wrapper final
  */
 export declare function wrapMiddleware(mw: MiddlewareFn): MiddlewareFn;
+//# sourceMappingURL=wrapMiddleware.d.ts.map

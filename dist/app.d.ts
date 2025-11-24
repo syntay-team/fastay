@@ -160,3 +160,4 @@ export type CreateAppOptions = {
  * ```
  */
 export declare function createApp(opts?: CreateAppOptions): Promise<import("express-serve-static-core").Express>;
+//# sourceMappingURL=app.d.ts.map

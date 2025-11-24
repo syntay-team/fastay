@@ -10,3 +10,4 @@ export declare const logger: {
     timeStart(): number;
     timeEnd(start: number): string;
 };
+//# sourceMappingURL=logger.d.ts.map
