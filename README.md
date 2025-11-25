@@ -2,10 +2,9 @@
 <p align="center">
   <img src="./fastay.png" width="200" />
 </p>
-Fastay is a modern backend framework built on **Express.js**, designed to create APIs quickly, predictably, and in a developer-friendly way.
+Fastay is a modern backend framework built on Express.js, designed to create APIs quickly, predictably, and in a developer-friendly way.
 
 It is **TypeScript-first**, file-based, auto-discovers routes and middlewares, and offers a clean development experience.
-
 ## Quick Navigation
 
 - [Fastay Philosophy](#fastay-philosophy)
