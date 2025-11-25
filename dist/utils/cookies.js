@@ -1,63 +1,49 @@
+import { parse, serialize } from "cookie";
 export class RequestCookies {
     constructor(cookieHeader) {
-        this.cookies = new Map();
-        this.setCookies = []; // para armazenar cookies que serão enviados no response
-        if (!cookieHeader)
-            return;
-        cookieHeader.split(';').forEach((cookie) => {
-            const [name, ...rest] = cookie.trim().split('=');
-            if (!name)
-                return;
-            this.cookies.set(name, decodeURIComponent(rest.join('=')));
-        });
+        this.setCookies = [];
+        this.cookies = cookieHeader ? parse(cookieHeader) : {};
     }
     get(name) {
-        const value = this.cookies.get(name);
-        if (!value)
-            return undefined;
-        return { value };
+        const value = this.cookies[name];
+        return value ? { value } : undefined;
     }
     has(name) {
-        return this.cookies.has(name);
+        return this.cookies[name] !== undefined;
     }
     all() {
-        const obj = {};
-        this.cookies.forEach((v, k) => (obj[k] = v));
-        return obj;
+        return { ...this.cookies };
     }
     set(name, value, options = {}) {
-        let cookieStr = `${name}=${encodeURIComponent(value)}`;
-        if (options.path)
-            cookieStr += `; Path=${options.path}`;
-        if (options.httpOnly)
-            cookieStr += `; HttpOnly`;
-        if (options.secure)
-            cookieStr += `; Secure`;
-        if (options.sameSite)
-            cookieStr += `; SameSite=${options.sameSite}`;
-        if (options.domain)
-            cookieStr += `; Domain=${options.domain}`;
-        if (options.maxAge)
-            cookieStr += `; Max-Age=${options.maxAge}`;
+        const cookieStr = serialize(name, value, {
+            path: options.path,
+            httpOnly: options.httpOnly,
+            secure: options.secure,
+            sameSite: options.sameSite,
+            domain: options.domain,
+            maxAge: options.maxAge,
+        });
         this.setCookies.push(cookieStr);
-        this.cookies.set(name, value);
+        this.cookies[name] = value;
     }
     delete(name, options = {}) {
-        this.set(name, '', {
+        const cookieStr = serialize(name, "", {
             path: options.path,
             domain: options.domain,
             maxAge: 0,
         });
-        this.cookies.delete(name);
+        this.setCookies.push(cookieStr);
+        delete this.cookies[name];
     }
     clear() {
-        this.cookies.forEach((_, name) => this.delete(name));
-    }
-    toString() {
-        return this.setCookies.join('; ');
+        Object.keys(this.cookies).forEach((name) => this.delete(name));
     }
     applyToResponse(res) {
-        this.setCookies.forEach((c) => res.setHeader('Set-Cookie', c));
+        for (const c of this.setCookies) {
+            res.appendHeader
+                ? res.appendHeader("Set-Cookie", c)
+                : res.setHeader("Set-Cookie", c);
+        }
     }
 }
 export const cookies = RequestCookies;

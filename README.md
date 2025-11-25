@@ -1,7 +1,6 @@
 <p align="center">
   <img src="./fastay.png" width="200" />
 </p>
-
 <h1 align="center">Fastay.js</h1>
 
 Fastay é um framework moderno para backend construído sobre o **Express.js**, projetado para criar APIs de forma rápida, previsível e amigável para desenvolvedores.
@@ -29,9 +28,9 @@ O maior ponto forte é **rapidez e simplicidade**, ideal para projetos de backen
 
 ### 1. Criar um novo projeto
 
-```bash
+`
 npx fastay create-app minha-app
-```
+`
 
 Exemplo do CLI:
 ```bash
@@ -56,7 +55,7 @@ npm run dev:watch
 ---
 
 **Estrutura do Projeto**
-```bash
+```
 minha-app/
 │
 ├── dist/                     # Código compilado para produção

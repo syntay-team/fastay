@@ -25,6 +25,7 @@ import { wrapMiddleware } from './utils/wrapMiddleware.js';
  * ```
  */
 export function createMiddleware(map) {
+    logger.info('Loading Fastay core middleware...');
     return (app) => {
         for (const [route, middlewares] of Object.entries(map)) {
             for (const mw of middlewares) {

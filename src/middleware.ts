@@ -66,6 +66,7 @@ export type MiddlewareMap = Record<string, MiddlewareFn[]>;
  * ```
  */
 export function createMiddleware(map: Record<string, MiddlewareFn[]>) {
+  logger.info('Loading Fastay core middleware...');
   return (app: Application) => {
     for (const [route, middlewares] of Object.entries(map)) {
       for (const mw of middlewares) {

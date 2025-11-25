@@ -1,81 +1,73 @@
-import { IncomingMessage, ServerResponse } from 'http';
+import { parse, serialize } from "cookie";
+import { ServerResponse } from "http";
 
 export class RequestCookies {
-  private cookies: Map<string, string> = new Map();
-  private setCookies: string[] = []; // para armazenar cookies que serão enviados no response
+  private cookies: Record<string, string | undefined>;
+  public setCookies: string[] = [];
 
   constructor(cookieHeader?: string) {
-    if (!cookieHeader) return;
-
-    cookieHeader.split(';').forEach((cookie) => {
-      const [name, ...rest] = cookie.trim().split('=');
-      if (!name) return;
-      this.cookies.set(name, decodeURIComponent(rest.join('=')));
-    });
+    this.cookies = cookieHeader ? parse(cookieHeader) : {};
   }
 
-  public get(name: string) {
-    const value = this.cookies.get(name);
-    if (!value) return undefined;
-    return { value };
+  get(name: string) {
+    const value = this.cookies[name];
+    return value ? { value } : undefined;
   }
 
-  public has(name: string) {
-    return this.cookies.has(name);
+  has(name: string) {
+    return this.cookies[name] !== undefined;
   }
 
-  public all() {
-    const obj: Record<string, string> = {};
-    this.cookies.forEach((v, k) => (obj[k] = v));
-    return obj;
+  all() {
+    return { ...this.cookies };
   }
 
-  public set(
+  set(
     name: string,
     value: string,
     options: {
       path?: string;
       httpOnly?: boolean;
       secure?: boolean;
-      sameSite?: 'Lax' | 'Strict' | 'None';
+      sameSite?: 'lax' | 'strict' | 'none';
       domain?: string;
       maxAge?: number;
     } = {}
   ) {
-    let cookieStr = `${name}=${encodeURIComponent(value)}`;
-    if (options.path) cookieStr += `; Path=${options.path}`;
-    if (options.httpOnly) cookieStr += `; HttpOnly`;
-    if (options.secure) cookieStr += `; Secure`;
-    if (options.sameSite) cookieStr += `; SameSite=${options.sameSite}`;
-    if (options.domain) cookieStr += `; Domain=${options.domain}`;
-    if (options.maxAge) cookieStr += `; Max-Age=${options.maxAge}`;
+    const cookieStr = serialize(name, value, {
+      path: options.path,
+      httpOnly: options.httpOnly,
+      secure: options.secure,
+      sameSite: options.sameSite,
+      domain: options.domain,
+      maxAge: options.maxAge,
+    });
 
     this.setCookies.push(cookieStr);
-    this.cookies.set(name, value);
+    this.cookies[name] = value;
   }
 
-  public delete(
-    name: string,
-    options: { path?: string; domain?: string } = {}
-  ) {
-    this.set(name, '', {
+  delete(name: string, options: { path?: string; domain?: string } = {}) {
+    const cookieStr = serialize(name, "", {
       path: options.path,
       domain: options.domain,
       maxAge: 0,
     });
-    this.cookies.delete(name);
+
+    this.setCookies.push(cookieStr);
+    delete this.cookies[name];
   }
 
-  public clear() {
-    this.cookies.forEach((_, name) => this.delete(name));
+  clear() {
+    Object.keys(this.cookies).forEach((name) => this.delete(name));
   }
 
-  public toString() {
-    return this.setCookies.join('; ');
-  }
-
-  public applyToResponse(res: ServerResponse) {
-    this.setCookies.forEach((c) => res.setHeader('Set-Cookie', c));
+  applyToResponse(res: ServerResponse) {
+    for (const c of this.setCookies) {
+      res.appendHeader
+        ? res.appendHeader("Set-Cookie", c)
+        : res.setHeader("Set-Cookie", c);
+    }
   }
 }
 
