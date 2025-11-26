@@ -1,7 +1,22 @@
 # Fastay Documentation
+
 <p align="center">
   <img src="./fastay.png" width="200" />
+  <br>
+  <a href="https://www.npmjs.com/package/@syntay/fastay">
+    <img src="https://img.shields.io/npm/v/@syntay/fastay.svg?style=flat-square" alt="npm version">
+  </a>
+  <a href="https://github.com/syntay-team/fastay">
+    <img src="https://img.shields.io/badge/GitHub-Repository-blue?style=flat-square&logo=github" alt="GitHub">
+  </a>
+  <a href="https://www.npmjs.com/package/@syntay/fastay">
+    <img src="https://img.shields.io/npm/dt/@syntay/fastay.svg?style=flat-square" alt="npm downloads">
+  </a>
+  <a href="https://github.com/syntay-team/fastay/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/@syntay/fastay.svg?style=flat-square" alt="license">
+  </a>
 </p>
+
 Fastay is a modern backend framework built on Express.js, designed to create APIs quickly, predictably, and in a developer-friendly way.
  
 It is **TypeScript-first**, file-based, auto-discovers routes and middlewares, and provides a clean development experience.
