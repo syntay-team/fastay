@@ -1,5 +1,6 @@
 import fs from 'fs';
-import path from 'path';
+import path from 'node:path';
+import mime from 'mime-types'; // npm i mime-types
 import { pathToFileURL } from 'url';
 import { logger } from './logger.js';
 /**
@@ -12,7 +13,7 @@ export function filePathToRoute(apiDir, filePath, baseRoute) {
     if (filename !== 'route.ts' && filename !== 'route.js')
         return null;
     const segments = parts
-        .map((s) => s.startsWith('[') && s.endsWith(']') ? `:${s.slice(1, -1)}` : s)
+        .map(s => (s.startsWith('[') && s.endsWith(']') ? `:${s.slice(1, -1)}` : s))
         .filter(Boolean);
     return `${baseRoute}/${segments.join('/')}`.replace(/\/+/g, '/');
 }
@@ -92,6 +93,20 @@ function wrapHandler(fn, routePath, filePath) {
                         res.cookie(name, data.value, data.options || {});
                     }
                 }
+                if (typedResult.static) {
+                    const filePath = typedResult.static.path;
+                    let contentType = typedResult.static.contentType;
+                    if (!contentType) {
+                        contentType = mime.lookup(filePath) || 'application/octet-stream';
+                    }
+                    res.setHeader('Content-Type', contentType);
+                    return res.sendFile(path.resolve(filePath), (err) => {
+                        if (err) {
+                            console.error(err);
+                            res.status(500).send('Internal Server Error');
+                        }
+                    });
+                }
                 const statusCode = typeof result.status === 'number' ? result.status : 200;
                 const body = result.body ?? result; // se não existir body, retorna o objeto inteiro
                 return res.status(statusCode).json(body);
@@ -135,7 +150,7 @@ export async function loadApiRoutes(app, baseRoute, apiDirectory) {
                 'DELETE',
                 'PATCH',
                 'OPTIONS',
-                'HEAD',
+                'HEAD'
             ];
             for (const m of httpMethods) {
                 if (typeof mod[m] === 'function') {

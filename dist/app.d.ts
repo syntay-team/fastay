@@ -159,5 +159,8 @@ export type CreateAppOptions = {
  * })();
  * ```
  */
-export declare function createApp(opts?: CreateAppOptions): Promise<import("express-serve-static-core").Express>;
+export declare function createApp(opts?: CreateAppOptions): Promise<{
+    app: import("express-serve-static-core").Express;
+    server: import("http").Server<typeof import("http").IncomingMessage, typeof import("http").ServerResponse>;
+}>;
 //# sourceMappingURL=app.d.ts.map

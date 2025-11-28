@@ -1,10 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { createServer } from 'node:http';
 import path from 'path';
 import { loadApiRoutes } from './router.js';
 import {
   MiddlewareMap,
   loadFastayMiddlewares,
-  createMiddleware,
+  createMiddleware
 } from './middleware.js';
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
@@ -206,12 +207,13 @@ export async function createApp(opts?: CreateAppOptions) {
   logger.success(`Base route: ${baseRoute}`);
 
   const app = express();
+  const server = createServer(app);
 
   if (opts?.expressOptions) {
     for (const [key, value] of Object.entries(opts.expressOptions)) {
       // Se for array → assume middleware global
       if (Array.isArray(value)) {
-        value.forEach((mw) => app.use(mw));
+        value.forEach(mw => app.use(mw));
       }
       // Se o app tiver método com esse nome
       else if (typeof (app as any)[key] === 'function') {
@@ -234,7 +236,7 @@ export async function createApp(opts?: CreateAppOptions) {
 
   const defaltPort = opts?.port ? opts.port : 6000;
 
-  app.listen(defaltPort, () => {
+  server.listen(defaltPort, () => {
     logger.success(
       `Server running at http://localhost:${defaltPort}${baseRoute}`
     );
@@ -324,5 +326,5 @@ export async function createApp(opts?: CreateAppOptions) {
   const time = logger.timeEnd(start);
   logger.success(`Boot completed in ${time}ms`);
 
-  return app;
+  return { app, server };
 }
