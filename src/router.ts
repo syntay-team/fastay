@@ -1,5 +1,6 @@
 import fs from 'fs';
-import path from 'path';
+import path from 'node:path';
+import mime from 'mime-types'; // npm i mime-types
 import { pathToFileURL } from 'url';
 import { Application, Request, Response, NextFunction } from 'express';
 import { logger } from './logger.js';
@@ -18,9 +19,7 @@ export function filePathToRoute(
   if (filename !== 'route.ts' && filename !== 'route.js') return null;
 
   const segments = parts
-    .map((s) =>
-      s.startsWith('[') && s.endsWith(']') ? `:${s.slice(1, -1)}` : s
-    )
+    .map(s => (s.startsWith('[') && s.endsWith(']') ? `:${s.slice(1, -1)}` : s))
     .filter(Boolean);
 
   return `${baseRoute}/${segments.join('/')}`.replace(/\/+/g, '/');
@@ -74,6 +73,10 @@ function wrapHandler(fn: Function, routePath: string, filePath: string) {
           };
           stream?: NodeJS.ReadableStream;
           raw?: Buffer | string;
+          static?: {
+            path: string;
+            contentType?: string;
+          };
         };
 
         // redirect
@@ -122,6 +125,24 @@ function wrapHandler(fn: Function, routePath: string, filePath: string) {
             res.cookie(name, data.value, data.options || {});
           }
         }
+
+        if (typedResult.static) {
+  const filePath = typedResult.static.path;
+  let contentType = typedResult.static.contentType;
+
+  if (!contentType) {
+    contentType = mime.lookup(filePath) || 'application/octet-stream';
+  }
+
+  res.setHeader('Content-Type', contentType);
+
+  return res.sendFile(path.resolve(filePath), (err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+}
 
         const statusCode =
           typeof result.status === 'number' ? result.status : 200;
@@ -176,7 +197,7 @@ export async function loadApiRoutes(
         'DELETE',
         'PATCH',
         'OPTIONS',
-        'HEAD',
+        'HEAD'
       ];
 
       for (const m of httpMethods) {
