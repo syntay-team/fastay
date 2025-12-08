@@ -27,6 +27,16 @@ function formatFunction(fn) {
 function validateMiddlewareCode(mw) {
     const raw = mw.toString();
     const name = mw.name || 'anonymous';
+    if (process.env.NODE_ENV === 'production') {
+        // Just checks if the function appears to be valid middleware
+        // (has at least 3 parameters)
+        const paramMatch = raw.match(/\((.*?)\)/);
+        const params = paramMatch ? paramMatch[1].split(',').length : 0;
+        if (params < 3) {
+            logger.error(`Middleware "${name}" may not be properly formatted`);
+        }
+        return;
+    }
     const cleaned = raw
         .replace(/\/\/.*$/gm, '')
         .replace(/\/\*[\s\S]*?\*\//gm, '');

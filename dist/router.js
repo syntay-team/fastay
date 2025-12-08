@@ -1,197 +1,211 @@
 import fs from 'fs';
 import path from 'node:path';
-import mime from 'mime-types'; // npm i mime-types
+import mime from 'mime-types';
 import { pathToFileURL } from 'url';
+import { Router } from 'express';
 import { logger } from './logger.js';
-/**
- * Converte caminho do arquivo em rota Express (somente arquivos route.ts)
- */
+// Optimized cache with WeakMap for garbage collection
+const mimeCache = new Map();
+const routeCache = new Map();
+const moduleCache = new Map();
+// Predefined HTTP methods as an array for compatibility
+const HTTP_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE',
+    'PATCH',
+    'OPTIONS',
+    'HEAD',
+];
+/** Path → route with cache */
 export function filePathToRoute(apiDir, filePath, baseRoute) {
-    const rel = path.relative(apiDir, filePath);
-    const parts = rel.split(path.sep);
-    const filename = parts.pop();
-    if (filename !== 'route.ts' && filename !== 'route.js')
-        return null;
-    const segments = parts
-        .map(s => (s.startsWith('[') && s.endsWith(']') ? `:${s.slice(1, -1)}` : s))
-        .filter(Boolean);
-    return `${baseRoute}/${segments.join('/')}`.replace(/\/+/g, '/');
-}
-/**
- * Retorna todos arquivos .ts/.js recursivamente
- */
-export function collectFiles(dir) {
-    let out = [];
-    const items = fs.readdirSync(dir, { withFileTypes: true });
-    for (const it of items) {
-        const full = path.join(dir, it.name);
-        if (it.isDirectory())
-            out = out.concat(collectFiles(full));
-        else if (/\.(ts|js|mts|mjs)$/.test(it.name))
-            out.push(full);
+    // Creates a unique key for the route cache.
+    const key = `${apiDir}:${filePath}`;
+    // Check if the route is already in the cache routeCache.
+    if (routeCache.has(key)) {
+        return routeCache.get(key);
     }
-    return out;
+    // the relative path of the file in relation to the API folder
+    const rel = path.relative(apiDir, filePath);
+    // Divide the relative path into parts.
+    const parts = rel.split(path.sep);
+    // The `parts` array moves and returns the last element of the `parts` array, which is the filename.
+    const filename = parts.pop();
+    //Check if the file exists.
+    if (!filename || !(filename === 'route.ts' || filename === 'route.js')) {
+        routeCache.set(key, null);
+        return null;
+    }
+    // Converts dynamic folders into Express route parameters.
+    const segments = parts.map((s) => s.startsWith('[') && s.endsWith(']') ? `:${s.slice(1, -1)}` : s);
+    const route = `${baseRoute}/${segments.join('/')}`.replace(/\/+/g, '/');
+    routeCache.set(key, route);
+    return route;
 }
-/**
- * Wrapper para suportar return JSON/string/number e capturar erros runtime
- */
-function wrapHandler(fn, routePath, filePath) {
+/** Walk recursion limit */
+export function collectFiles(dir) {
+    const result = [];
+    const stack = [dir];
+    const maxDepth = 20;
+    while (stack.length > 0 && stack.length < maxDepth) {
+        const current = stack.pop();
+        try {
+            const items = fs.readdirSync(current, { withFileTypes: true });
+            for (let i = items.length - 1; i >= 0; i--) {
+                const it = items[i];
+                const full = path.join(current, it.name);
+                if (it.isDirectory()) {
+                    stack.push(full);
+                }
+                else if (/\.(ts|js|mts|mjs)$/.test(it.name)) {
+                    result.push(full);
+                }
+            }
+        }
+        catch (error) {
+            logger.warn(`Cannot read directory: ${current}`);
+        }
+    }
+    return result;
+}
+/** Cache mime */
+function getMime(filePath) {
+    const cached = mimeCache.get(filePath);
+    if (cached)
+        return cached;
+    const type = mime.lookup(filePath) || 'application/octet-stream';
+    mimeCache.set(filePath, type);
+    return type;
+}
+/** Highly optimized handler with fewer branches. */
+function wrapHandler(fn) {
     return async (req, res, next) => {
         try {
-            const result = fn.length >= 2 ? await fn(req, res) : await fn(req);
-            if (res.headersSent)
+            const result = await (fn.length >= 2 ? fn(req, res) : fn(req));
+            // If response has already been sent, exit
+            if (res.headersSent || result === undefined)
                 return;
-            if (result === undefined)
-                return;
-            // Suporte a status e cookies customizado
-            // if (
-            //   typeof result === 'object' &&
-            //   'status' in result &&
-            //   'body' in result &&
-            //   typeof result.status === 'number'
-            // ) {
-            //   return res.status(result.status).json(result.body);
-            // }
-            if (typeof result === 'object' && result !== null) {
-                const typedResult = result;
-                // redirect
-                if (typedResult.redirect) {
-                    return res.redirect(typedResult.status ?? 302, typedResult.redirect);
-                }
-                //headers
-                if (typedResult.headers) {
-                    for (const [h, v] of Object.entries(typedResult.headers)) {
-                        res.setHeader(h, v);
-                    }
-                }
-                //file
-                if (typedResult.file) {
-                    const { path, filename, options } = typedResult.file;
-                    if (filename) {
-                        return res.download(path, filename, options);
-                    }
-                    return res.download(path, options);
-                }
-                // stream
-                if (typedResult.stream) {
-                    if (typedResult.headers) {
-                        for (const [h, v] of Object.entries(typedResult.headers))
-                            res.setHeader(h, v);
-                    }
-                    return typedResult.stream.pipe(res);
-                }
-                // raw
-                if (typedResult.raw) {
-                    if (typedResult.headers) {
-                        for (const [h, v] of Object.entries(typedResult.headers))
-                            res.setHeader(h, v);
-                    }
-                    return res.status(typedResult.status ?? 200).send(typedResult.raw);
-                }
-                if (typedResult.cookies) {
-                    for (const [name, data] of Object.entries(typedResult.cookies)) {
-                        res.cookie(name, data.value, data.options || {});
-                    }
-                }
-                if (typedResult.static) {
-                    const filePath = typedResult.static.path;
-                    let contentType = typedResult.static.contentType;
-                    if (!contentType) {
-                        contentType = mime.lookup(filePath) || 'application/octet-stream';
-                    }
-                    res.setHeader('Content-Type', contentType);
-                    return res.sendFile(path.resolve(filePath), (err) => {
-                        if (err) {
-                            console.error(err);
-                            res.status(500).send('Internal Server Error');
+            //Optimized processing by type
+            switch (typeof result) {
+                case 'string':
+                case 'number':
+                case 'boolean':
+                    return res.send(String(result));
+                case 'object':
+                    if (result === null)
+                        return res.send('null');
+                    const response = result;
+                    // Headers first
+                    if (response.headers) {
+                        for (const [k, v] of Object.entries(response.headers)) {
+                            res.setHeader(k, v);
                         }
-                    });
-                }
-                const statusCode = typeof result.status === 'number' ? result.status : 200;
-                const body = result.body ?? result; // se não existir body, retorna o objeto inteiro
-                return res.status(statusCode).json(body);
+                    }
+                    // Cookies
+                    if (response.cookies) {
+                        for (const [name, cookie] of Object.entries(response.cookies)) {
+                            res.cookie(name, cookie.value, cookie.options || {});
+                        }
+                    }
+                    // Redirections e files primeiro (mais comuns)
+                    if (response.redirect) {
+                        return res.redirect(response.status ?? 302, response.redirect);
+                    }
+                    if (response.file) {
+                        return response.file.filename
+                            ? res.download(response.file.path, response.file.filename, response.file.options)
+                            : res.download(response.file.path, response.file.options);
+                    }
+                    if (response.stream) {
+                        return response.stream.pipe(res);
+                    }
+                    if (response.raw) {
+                        return res.status(response.status ?? 200).send(response.raw);
+                    }
+                    if (response.static) {
+                        const type = response.static.contentType || getMime(response.static.path);
+                        res.setHeader('Content-Type', type);
+                        return res.sendFile(path.resolve(response.static.path));
+                    }
+                    // JSON response default
+                    return res
+                        .status(response.status ?? 200)
+                        .json(response.body ?? result);
+                default:
+                    return res.json(result);
             }
-            // Suporte a retorno simples
-            if (typeof result === 'string')
-                return res.send(result);
-            if (typeof result === 'number')
-                return res.send(String(result));
-            return res.json(result);
         }
         catch (err) {
-            const stack = err?.stack?.split('\n').slice(0, 3).join('\n') || '';
-            logger.error(`${err.name}: ${err.message}`);
+            const error = err;
+            logger.error(`Handler Error [${req.method} ${req.path}]: ${error.message}`);
             next(err);
         }
     };
 }
-/**
- * Carrega todas as rotas do diretório apiDir
- */
+/** Optimized route loader with parallel import */
 export async function loadApiRoutes(app, baseRoute, apiDirectory) {
     const isDev = process.env.NODE_ENV !== 'production';
     const apiDir = path.join(process.cwd(), isDev ? apiDirectory : 'dist/api');
-    if (!fs.existsSync(apiDir))
+    if (!fs.existsSync(apiDir)) {
+        logger.warn(`API directory not found: ${apiDir}`);
         return 0;
+    }
     const files = collectFiles(apiDir);
-    let cont = 0;
-    logger.group('Routes Loaded');
-    for (const file of files) {
+    let count = 0;
+    logger.group('🚀 Loading Routes');
+    // Optimized parallel loading
+    const modulePromises = files.map(async (file) => {
+        try {
+            // Module cache in production
+            if (process.env.NODE_ENV === 'production' && moduleCache.has(file)) {
+                return { file, module: moduleCache.get(file) };
+            }
+            const module = await import(pathToFileURL(file).href);
+            if (process.env.NODE_ENV === 'production') {
+                moduleCache.set(file, module);
+            }
+            return { file, module };
+        }
+        catch (error) {
+            logger.error(`Failed to load ${file}: ${error.message}`);
+            return { file, module: null, error };
+        }
+    });
+    const modules = await Promise.all(modulePromises);
+    // Router per file
+    for (const { file, module } of modules) {
+        if (!module || module.error)
+            continue;
         const route = filePathToRoute(apiDir, file, baseRoute);
         if (!route)
             continue;
-        try {
-            const fileUrl = pathToFileURL(file).href;
-            const mod = await import(fileUrl);
-            const httpMethods = [
-                'GET',
-                'POST',
-                'PUT',
-                'DELETE',
-                'PATCH',
-                'OPTIONS',
-                'HEAD'
-            ];
-            for (const m of httpMethods) {
-                if (typeof mod[m] === 'function') {
-                    app[m.toLowerCase()](route, wrapHandler(mod[m], route, file));
-                    cont++;
-                    logger.success(`Route: [${m}] ${route}`);
+        const routeRouter = Router();
+        let hasRoutes = false;
+        // Register HTTP methods
+        for (const method of HTTP_METHODS) {
+            const handler = module[method];
+            if (typeof handler === 'function') {
+                // Using type assertion is safe.
+                const routerMethod = method.toLowerCase();
+                if (typeof routeRouter[routerMethod] === 'function') {
+                    routeRouter[routerMethod]('/', wrapHandler(handler));
+                    logger.success(`[${method}] ${route}`);
+                    hasRoutes = true;
+                    count++;
                 }
-            }
-            if (mod.default && typeof mod.default === 'function') {
-                app.get(route, wrapHandler(mod.default, route, file));
-                cont++;
-                logger.success(`Route: [GET] ${route}`);
             }
         }
-        catch (err) {
-            const stack = err?.stack?.split('\n').slice(0, 3).join('\n') || '';
-            // logger.error(
-            //   `✗ Boot Error importing ${file}\n` +
-            //     `  Message: ${err.message || 'Unknown error'}\n` +
-            //     `  Stack: ${stack}`
-            // );
-            let fileInfo = '';
-            if (err.stack) {
-                const stackLine = err.stack.split('\n')[1]; // pega primeira linha depois do erro
-                const match = stackLine.match(/\((.*):(\d+):(\d+)\)/);
-                if (match) {
-                    const [_, file, line, col] = match;
-                    fileInfo = `${file}:${line}:${col}`;
-                    // Tenta mostrar o trecho da linha que deu erro
-                    if (fs.existsSync(file)) {
-                        const codeLines = fs.readFileSync(file, 'utf-8').split('\n');
-                        const codeSnippet = codeLines[parseInt(line) - 1].trim();
-                        fileInfo += ` → ${codeSnippet}`;
-                    }
-                }
-            }
-            // logger.group(`✗ Boot Error importing ${file}`);
-            logger.error(`${err.name}: ${err.message}`);
-            if (fileInfo)
-                logger.error(`Location: ${fileInfo}`);
+        // Default export
+        if (typeof module.default === 'function') {
+            routeRouter.get('/', wrapHandler(module.default));
+            logger.success(`[GET] ${route}`);
+            hasRoutes = true;
+            count++;
+        }
+        if (hasRoutes) {
+            app.use(route, routeRouter);
         }
     }
-    return cont;
+    return count;
 }

@@ -1,14 +1,8 @@
 import { Application } from 'express';
-/**
- * Converte caminho do arquivo em rota Express (somente arquivos route.ts)
- */
+/** Path → route with cache */
 export declare function filePathToRoute(apiDir: string, filePath: string, baseRoute: string): string | null;
-/**
- * Retorna todos arquivos .ts/.js recursivamente
- */
+/** Walk recursion limit */
 export declare function collectFiles(dir: string): string[];
-/**
- * Carrega todas as rotas do diretório apiDir
- */
+/** Optimized route loader with parallel import */
 export declare function loadApiRoutes(app: Application, baseRoute: string, apiDirectory: string): Promise<number>;
 //# sourceMappingURL=router.d.ts.map

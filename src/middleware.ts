@@ -1,9 +1,10 @@
-import { Application, Request, Response, NextFunction } from 'express';
+import { Application, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
 import { logger } from './logger.js';
 import { wrapMiddleware } from './utils/wrapMiddleware.js';
+import { Request } from './types/request.js';
 
 type MiddlewareFn = (req: Request, res: Response, next: NextFunction) => any;
 
@@ -72,7 +73,7 @@ export function createMiddleware(map: Record<string, MiddlewareFn[]>) {
       for (const mw of middlewares) {
         const wrapped = wrapMiddleware(mw);
 
-        app.use(route, wrapped);
+        app.use(route, wrapped as unknown as import('express').RequestHandler);
       }
     }
   };
@@ -101,7 +102,7 @@ export async function loadFastayMiddlewares(app: Application) {
     const map = mod.middleware as Record<string, any[]>;
     for (const [route, middlewares] of Object.entries(map)) {
       for (const mw of middlewares) {
-        app.use(route, mw);
+        app.use(route, mw as unknown as import('express').RequestHandler);
       }
     }
   }

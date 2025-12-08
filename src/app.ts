@@ -1,11 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { createServer } from 'node:http';
+import { createServer, Server } from 'node:http';
 import path from 'path';
 import { loadApiRoutes } from './router.js';
 import {
   MiddlewareMap,
   loadFastayMiddlewares,
-  createMiddleware
+  createMiddleware,
 } from './middleware.js';
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
@@ -109,37 +109,37 @@ export type CreateAppOptions = {
     allowAnyOrigin?: boolean;
 
     /**
-     * Lista de origens específicas permitidas para envio de cookies.
-     * Exemplo: ["http://localhost:3000", "https://meusite.com"]
+     * List of specific origins allowed for sending cookies.
+     * Example: ["http://localhost:3000", "https://mysite.com"]
      */
     cookieOrigins?: string[];
 
     /**
-     * Se true, habilita envio de cookies cross-origin.
+     * If true, enables cross-origin cookie sending.
      * Default: false
      */
     credentials?: boolean;
 
     /**
-     * Lista de métodos HTTP permitidos, separados por vírgula.
+     * List of allowed HTTP methods, separated by commas.
      * Default: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
      */
     methods?: string;
 
     /**
-     * Lista de cabeçalhos permitidos na requisição.
+     * List of headers allowed in the request.
      * Default: "Content-Type, Authorization"
      */
     headers?: string;
 
     /**
-     * Cabeçalhos expostos ao cliente.
-     * Exemplo: ["X-Custom-Header"]
+     * Headers displayed to the customer.
+     * Example: ["X-Custom-Header"]
      */
     exposedHeaders?: string;
 
     /**
-     * Tempo máximo de cache para requisições prévias (preflight), em segundos.
+     * Maximum cache time for preflight requests, in seconds.
      */
     maxAge?: number;
   };
@@ -192,6 +192,63 @@ export type CreateAppOptions = {
  * })();
  * ```
  */
+
+/** pre-compiled CORS */
+function createCorsHandler(opts?: CreateAppOptions['enableCors']) {
+  if (!opts) return null;
+
+  const {
+    allowAnyOrigin = false,
+    cookieOrigins = [],
+    credentials = false,
+    methods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    headers = 'Content-Type, Authorization',
+    exposedHeaders,
+    maxAge,
+  } = opts;
+
+  return (req: Request, res: Response, next: NextFunction) => {
+    // Determine the origin in an optimized way.
+    let origin = '*';
+
+    if (credentials && cookieOrigins.length > 0) {
+      const requestOrigin = req.headers.origin;
+      if (requestOrigin && cookieOrigins.includes(requestOrigin)) {
+        origin = requestOrigin;
+      } else {
+        origin = '';
+      }
+    } else if (!credentials && allowAnyOrigin) {
+      origin = '*';
+    }
+
+    const corsHeaders: Record<string, string> = {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Credentials': credentials ? 'true' : 'false',
+      'Access-Control-Allow-Methods': methods,
+      'Access-Control-Allow-Headers': headers,
+    };
+
+    if (exposedHeaders) {
+      corsHeaders['Access-Control-Expose-Headers'] = exposedHeaders;
+    }
+
+    if (maxAge) {
+      corsHeaders['Access-Control-Max-Age'] = maxAge.toString();
+    }
+
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      res.setHeader(key, value);
+    }
+
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+
+    next();
+  };
+}
+
 export async function createApp(opts?: CreateAppOptions) {
   const start = logger.timeStart();
 
@@ -202,18 +259,19 @@ export async function createApp(opts?: CreateAppOptions) {
 
   const apiDir = opts?.apiDir ?? path.resolve(process.cwd(), 'src', 'api');
   const baseRoute = opts?.baseRoute ?? '/api';
+  const port = opts?.port ?? 5000;
 
   logger.success(`API directory: ${apiDir}`);
   logger.success(`Base route: ${baseRoute}`);
 
   const app = express();
-  const server = createServer(app);
+  const server: Server = createServer(app);
 
   if (opts?.expressOptions) {
     for (const [key, value] of Object.entries(opts.expressOptions)) {
       // Se for array → assume middleware global
       if (Array.isArray(value)) {
-        value.forEach(mw => app.use(mw));
+        value.forEach((mw) => app.use(mw));
       }
       // Se o app tiver método com esse nome
       else if (typeof (app as any)[key] === 'function') {
@@ -232,14 +290,33 @@ export async function createApp(opts?: CreateAppOptions) {
     }
   }
 
-  app.use(express.json());
+  server.listen(port, () => {
+    logger.success(`Server running at http://localhost:${port}${baseRoute}`);
+  });
 
-  const defaltPort = opts?.port ? opts.port : 6000;
+  // CORS handler pré-compilado
+  const corsHandler = createCorsHandler(opts?.enableCors);
+  if (corsHandler) {
+    app.use(corsHandler);
+  }
 
-  server.listen(defaltPort, () => {
-    logger.success(
-      `Server running at http://localhost:${defaltPort}${baseRoute}`
-    );
+  // FormData middleware
+  app.use(formDataMiddleware());
+
+  // Fastay middlewares
+  if (opts?.middlewares) {
+    logger.group('Fastay Middlewares');
+    const apply = createMiddleware(opts.middlewares);
+    apply(app);
+  }
+
+  // Auto middlewares
+  await loadFastayMiddlewares(app);
+
+  // Health check otimizado
+  app.get('/health', (_, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send('{"ok":true}');
   });
 
   // external middlewares
@@ -267,6 +344,7 @@ export async function createApp(opts?: CreateAppOptions) {
 
   // health check
   app.get('/_health', (_, res) => res.json({ ok: true }));
+
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Powered-By', 'Syntay Engine');
     (req as any).cookies = new RequestCookies(req.headers.cookie);
@@ -315,16 +393,57 @@ export async function createApp(opts?: CreateAppOptions) {
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Powered-By', 'Syntay Engine');
 
-  // load routes
-  // logger.group('Routes Loaded');
+    // Cookies parsing otimizado
+    (req as any).cookies = new RequestCookies(req.headers.cookie);
+
+    next();
+  });
+
+  // Carregamento de rotas
   const totalRoutes = await loadApiRoutes(app, baseRoute, apiDir);
-  logger.success(`Total routes loaded: ${totalRoutes}`);
 
+  // Error handler deve vir depois das rotas
+  if (opts?.expressOptions?.errorHandler) {
+    app.use(opts.expressOptions.errorHandler);
+  } else {
+    // Error handler padrão otimizado
+    app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+      logger.error(
+        `Unhandled Error [${req.method} ${req.path}]: ${err.message}`
+      );
+      res.status(500).json({
+        error: 'Internal Server Error',
+        ...(process.env.NODE_ENV === 'development' && { detail: err.message }),
+      });
+    });
+  }
+
+  // // load routes
+  // // logger.group('Routes Loaded');
+  // const totalRoutes = await loadApiRoutes(app, baseRoute, apiDir);
+
+  // 404 handler otimizado - CORRIGIDO: Não usar '*'
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({
+      error: 'Not Found',
+      path: req.originalUrl,
+    });
+  });
+
+  server.listen(port);
   // app.use(errorHandler);
 
   const time = logger.timeEnd(start);
+  logger.success(`Total routes loaded: ${totalRoutes}`);
   logger.success(`Boot completed in ${time}ms`);
+
+  if (process.env.NODE_ENV === 'development') {
+    const used = process.memoryUsage();
+    logger.info(`Memory: ${Math.round(used.heapUsed / 1024 / 1024)}MB`);
+  }
 
   return { app, server };
 }

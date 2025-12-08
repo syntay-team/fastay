@@ -5,12 +5,12 @@ import { pathToFileURL } from 'url';
 import { Application, Request, Response, NextFunction, Router } from 'express';
 import { logger } from './logger.js';
 
-// Optimized cache with WeakMap for garbage collection
+// Cache otimizado com WeakMap para garbage collection
 const mimeCache = new Map<string, string>();
 const routeCache = new Map<string, string | null>();
 const moduleCache = new Map<string, any>();
 
-// Predefined HTTP methods as an array for compatibility
+// Métodos HTTP pré-definidos como array para compatibilidade
 const HTTP_METHODS = [
   'GET',
   'POST',
@@ -21,7 +21,7 @@ const HTTP_METHODS = [
   'HEAD',
 ] as const;
 
-/** Types */
+/** Tipos */
 interface FastayCookie {
   value: string;
   options?: Record<string, any>;
@@ -50,34 +50,28 @@ interface FastayResponse {
   static?: FastayStatic;
 }
 
-/** Path → route with cache */
+/** Caminho → rota com cache */
 export function filePathToRoute(
   apiDir: string,
   filePath: string,
   baseRoute: string
 ): string | null {
-  // Creates a unique key for the route cache.
   const key = `${apiDir}:${filePath}`;
 
-  // Check if the route is already in the cache routeCache.
   if (routeCache.has(key)) {
     return routeCache.get(key)!;
   }
 
-  // the relative path of the file in relation to the API folder
   const rel = path.relative(apiDir, filePath);
-  // Divide the relative path into parts.
   const parts = rel.split(path.sep);
-  // The `parts` array moves and returns the last element of the `parts` array, which is the filename.
   const filename = parts.pop();
 
-  //Check if the file exists.
+  // Verificação rápida
   if (!filename || !(filename === 'route.ts' || filename === 'route.js')) {
     routeCache.set(key, null);
     return null;
   }
 
-  // Converts dynamic folders into Express route parameters.
   const segments = parts.map((s) =>
     s.startsWith('[') && s.endsWith(']') ? `:${s.slice(1, -1)}` : s
   );
@@ -88,11 +82,11 @@ export function filePathToRoute(
   return route;
 }
 
-/** Walk recursion limit */
+/** Walk com recursion limit */
 export function collectFiles(dir: string): string[] {
   const result: string[] = [];
   const stack: string[] = [dir];
-  const maxDepth = 20;
+  const maxDepth = 20; // Prevenção contra recursion infinita
 
   while (stack.length > 0 && stack.length < maxDepth) {
     const current = stack.pop()!;
@@ -118,7 +112,7 @@ export function collectFiles(dir: string): string[] {
   return result;
 }
 
-/** Cache mime */
+/** Cache de mime otimizado */
 function getMime(filePath: string): string {
   const cached = mimeCache.get(filePath);
   if (cached) return cached;
@@ -128,16 +122,16 @@ function getMime(filePath: string): string {
   return type;
 }
 
-/** Highly optimized handler with fewer branches. */
+/** Handler ultra-otimizado com menos branches */
 function wrapHandler(fn: (req: Request, res?: Response) => Promise<any> | any) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await (fn.length >= 2 ? fn(req, res) : fn(req));
 
-      // If response has already been sent, exit
+      // Se response já foi enviada, sair
       if (res.headersSent || result === undefined) return;
 
-      //Optimized processing by type
+      // Processamento otimizado por tipo
       switch (typeof result) {
         case 'string':
         case 'number':
@@ -149,7 +143,7 @@ function wrapHandler(fn: (req: Request, res?: Response) => Promise<any> | any) {
 
           const response = result as FastayResponse;
 
-          // Headers first
+          // Headers primeiro
           if (response.headers) {
             for (const [k, v] of Object.entries(response.headers)) {
               res.setHeader(k, v);
@@ -193,7 +187,7 @@ function wrapHandler(fn: (req: Request, res?: Response) => Promise<any> | any) {
             return res.sendFile(path.resolve(response.static.path));
           }
 
-          // JSON response default
+          // JSON response padrão
           return res
             .status(response.status ?? 200)
             .json(response.body ?? result);
@@ -211,7 +205,7 @@ function wrapHandler(fn: (req: Request, res?: Response) => Promise<any> | any) {
   };
 }
 
-/** Optimized route loader with parallel import */
+/** Loader de rotas otimizado com importação em paralelo */
 export async function loadApiRoutes(
   app: Application,
   baseRoute: string,
@@ -230,10 +224,10 @@ export async function loadApiRoutes(
 
   logger.group('🚀 Loading Routes');
 
-  // Optimized parallel loading
+  // Carregamento paralelo otimizado
   const modulePromises = files.map(async (file) => {
     try {
-      // Module cache in production
+      // Cache de módulos em produção
       if (process.env.NODE_ENV === 'production' && moduleCache.has(file)) {
         return { file, module: moduleCache.get(file) };
       }
@@ -253,7 +247,7 @@ export async function loadApiRoutes(
 
   const modules = await Promise.all(modulePromises);
 
-  // Router per file
+  // Router por arquivo para melhor performance
   for (const { file, module } of modules) {
     if (!module || (module as any).error) continue;
 
@@ -263,11 +257,11 @@ export async function loadApiRoutes(
     const routeRouter = Router();
     let hasRoutes = false;
 
-    // Register HTTP methods
+    // Registrar métodos HTTP
     for (const method of HTTP_METHODS) {
       const handler = module[method];
       if (typeof handler === 'function') {
-        // Using type assertion is safe.
+        // Usar type assertion segura
         const routerMethod = method.toLowerCase() as keyof Router;
         if (typeof routeRouter[routerMethod] === 'function') {
           (routeRouter[routerMethod] as Function)('/', wrapHandler(handler));

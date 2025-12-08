@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import { Request } from 'src/types/request.js';
 export type MiddlewareFn = (req: Request, res: Response, next: NextFunction) => any;
 /**
  * Wrapper final
