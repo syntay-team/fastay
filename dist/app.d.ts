@@ -1,4 +1,5 @@
 import express from 'express';
+import { Server } from 'node:http';
 import { MiddlewareMap } from './middleware.js';
 import type { ServeStaticOptions } from 'serve-static';
 /**
@@ -85,32 +86,32 @@ export type CreateAppOptions = {
          */
         allowAnyOrigin?: boolean;
         /**
-         * Lista de origens específicas permitidas para envio de cookies.
-         * Exemplo: ["http://localhost:3000", "https://meusite.com"]
+         * List of specific origins allowed for sending cookies.
+         * Example: ["http://localhost:3000", "https://mysite.com"]
          */
         cookieOrigins?: string[];
         /**
-         * Se true, habilita envio de cookies cross-origin.
+         * If true, enables cross-origin cookie sending.
          * Default: false
          */
         credentials?: boolean;
         /**
-         * Lista de métodos HTTP permitidos, separados por vírgula.
+         * List of allowed HTTP methods, separated by commas.
          * Default: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
          */
         methods?: string;
         /**
-         * Lista de cabeçalhos permitidos na requisição.
+         * List of headers allowed in the request.
          * Default: "Content-Type, Authorization"
          */
         headers?: string;
         /**
-         * Cabeçalhos expostos ao cliente.
-         * Exemplo: ["X-Custom-Header"]
+         * Headers displayed to the customer.
+         * Example: ["X-Custom-Header"]
          */
         exposedHeaders?: string;
         /**
-         * Tempo máximo de cache para requisições prévias (preflight), em segundos.
+         * Maximum cache time for preflight requests, in seconds.
          */
         maxAge?: number;
     };
@@ -130,37 +131,8 @@ export type CreateAppOptions = {
      */
     middlewares?: MiddlewareMap;
 };
-/**
- * Bootstraps and configures a Fastay application.
- *
- * Fastay automatically:
- * - Discovers and registers routes defined in `apiDir`.
- * - Applies both built-in and user-provided middlewares.
- * - Exposes a health-check endpoint at `/_health`.
- *
- * @param opts - Configuration options for the Fastay application.
- * @returns A Promise that resolves to an Express `Application` instance.
- *
- * @example
- * ```ts
- * import { createApp } from '@syntay/fastay';
- * import cors from 'cors';
- * import helmet from 'helmet';
- *
- * void (async () => {
- *   await createApp({
- *     apiDir: './src/api',
- *     baseRoute: '/api',
- *     port: 5555,
- *     expressOptions: {
- *       middlewares: [cors(), helmet()],
- *     },
- *   });
- * })();
- * ```
- */
 export declare function createApp(opts?: CreateAppOptions): Promise<{
     app: import("express-serve-static-core").Express;
-    server: import("http").Server<typeof import("http").IncomingMessage, typeof import("http").ServerResponse>;
+    server: Server<typeof import("http").IncomingMessage, typeof import("http").ServerResponse>;
 }>;
 //# sourceMappingURL=app.d.ts.map

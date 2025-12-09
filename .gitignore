@@ -45,3 +45,4 @@ nyc_output/
 # TypeScript metadata
 *.tsbuildinfo
 
+docs/
