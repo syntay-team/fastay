@@ -80,9 +80,9 @@ function getMime(filePath) {
 }
 /** Highly optimized handler with fewer branches. */
 function wrapHandler(fn) {
-    return async (req, res, next) => {
+    return async (request, res, next) => {
         try {
-            const result = await (fn.length >= 2 ? fn(req, res) : fn(req));
+            const result = await (fn.length >= 2 ? fn(request, res) : fn(request));
             // If response has already been sent, exit
             if (res.headersSent || result === undefined)
                 return;
@@ -108,7 +108,7 @@ function wrapHandler(fn) {
                             res.cookie(name, cookie.value, cookie.options || {});
                         }
                     }
-                    // Redirections e files primeiro (mais comuns)
+                    // Redirections e files
                     if (response.redirect) {
                         return res.redirect(response.status ?? 302, response.redirect);
                     }
@@ -138,7 +138,7 @@ function wrapHandler(fn) {
         }
         catch (err) {
             const error = err;
-            logger.error(`Handler Error [${req.method} ${req.path}]: ${error.message}`);
+            logger.error(`Handler Error [${request.method} ${request.path}]: ${error.message}`);
             next(err);
         }
     };

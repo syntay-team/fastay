@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'node:http';
 import path from 'path';
 import { loadApiRoutes } from './router.js';
-import { loadFastayMiddlewares, createMiddleware } from './middleware.js';
+import { loadFastayMiddlewares, createMiddleware, } from './middleware.js';
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
 import { RequestCookies } from './utils/cookies.js';
@@ -40,7 +40,7 @@ import { formDataMiddleware } from './utils/formDataMiddleware.js';
 function createCorsHandler(opts) {
     if (!opts)
         return null;
-    const { allowAnyOrigin = false, cookieOrigins = [], credentials = false, methods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS', headers = 'Content-Type, Authorization', exposedHeaders, maxAge } = opts;
+    const { allowAnyOrigin = false, cookieOrigins = [], credentials = false, methods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS', headers = 'Content-Type, Authorization', exposedHeaders, maxAge, } = opts;
     return (req, res, next) => {
         // Determine the origin in an optimized way.
         let origin = '*';
@@ -60,7 +60,7 @@ function createCorsHandler(opts) {
             'Access-Control-Allow-Origin': origin,
             'Access-Control-Allow-Credentials': credentials ? 'true' : 'false',
             'Access-Control-Allow-Methods': methods,
-            'Access-Control-Allow-Headers': headers
+            'Access-Control-Allow-Headers': headers,
         };
         if (exposedHeaders) {
             corsHeaders['Access-Control-Expose-Headers'] = exposedHeaders;
@@ -93,7 +93,7 @@ export async function createApp(opts) {
         for (const [key, value] of Object.entries(opts.expressOptions)) {
             // Se for array → assume middleware global
             if (Array.isArray(value)) {
-                value.forEach(mw => app.use(mw));
+                value.forEach((mw) => app.use(mw));
             }
             // Se o app tiver método com esse nome
             else if (typeof app[key] === 'function') {
@@ -113,9 +113,9 @@ export async function createApp(opts) {
             }
         }
     }
-    // server.listen(port, () => {
-    logger.success(`Server running at http://localhost:${port}${baseRoute}`);
-    // });
+    server.listen(port, () => {
+        logger.success(`Server running at http://localhost:${port}${baseRoute}`);
+    });
     // CORS handler pré-compilado
     const corsHandler = createCorsHandler(opts?.enableCors);
     if (corsHandler) {
@@ -155,6 +155,9 @@ export async function createApp(opts) {
     // automatic middlewares
     // logger.group('Fastay Auto-Middlewares');
     const isMiddleware = await loadFastayMiddlewares(app);
+    if (!opts?.expressOptions?.jsonOptions) {
+        app.use(express.json({ limit: '10mb' }));
+    }
     // health check
     app.get('/_health', (_, res) => res.json({ ok: true }));
     app.use((req, res, next) => {
@@ -208,7 +211,7 @@ export async function createApp(opts) {
             logger.error(`Unhandled Error [${req.method} ${req.path}]: ${err.message}`);
             res.status(500).json({
                 error: 'Internal Server Error',
-                ...(process.env.NODE_ENV === 'development' && { detail: err.message })
+                ...(process.env.NODE_ENV === 'development' && { detail: err.message }),
             });
         });
     }
@@ -219,10 +222,10 @@ export async function createApp(opts) {
     app.use((req, res) => {
         res.status(404).json({
             error: 'Not Found',
-            path: req.originalUrl
+            path: req.originalUrl,
         });
     });
-    server.listen(port);
+    // server.listen(port);
     // app.use(errorHandler);
     const time = logger.timeEnd(start);
     logger.success(`Total routes loaded: ${totalRoutes}`);

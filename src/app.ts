@@ -5,7 +5,7 @@ import { loadApiRoutes } from './router.js';
 import {
   MiddlewareMap,
   loadFastayMiddlewares,
-  createMiddleware
+  createMiddleware,
 } from './middleware.js';
 import { logger } from './logger.js';
 import { printBanner } from './banner.js';
@@ -211,7 +211,7 @@ function createCorsHandler(opts?: CreateAppOptions['enableCors']) {
     methods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     headers = 'Content-Type, Authorization',
     exposedHeaders,
-    maxAge
+    maxAge,
   } = opts;
 
   return (req: Request, res: Response, next: NextFunction) => {
@@ -233,7 +233,7 @@ function createCorsHandler(opts?: CreateAppOptions['enableCors']) {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Credentials': credentials ? 'true' : 'false',
       'Access-Control-Allow-Methods': methods,
-      'Access-Control-Allow-Headers': headers
+      'Access-Control-Allow-Headers': headers,
     };
 
     if (exposedHeaders) {
@@ -278,7 +278,7 @@ export async function createApp(opts?: CreateAppOptions) {
     for (const [key, value] of Object.entries(opts.expressOptions)) {
       // Se for array → assume middleware global
       if (Array.isArray(value)) {
-        value.forEach(mw => app.use(mw));
+        value.forEach((mw) => app.use(mw));
       }
       // Se o app tiver método com esse nome
       else if (typeof (app as any)[key] === 'function') {
@@ -297,9 +297,9 @@ export async function createApp(opts?: CreateAppOptions) {
     }
   }
 
-  // server.listen(port, () => {
-  logger.success(`Server running at http://localhost:${port}${baseRoute}`);
-  // });
+  server.listen(port, () => {
+    logger.success(`Server running at http://localhost:${port}${baseRoute}`);
+  });
 
   // CORS handler pré-compilado
   const corsHandler = createCorsHandler(opts?.enableCors);
@@ -348,7 +348,9 @@ export async function createApp(opts?: CreateAppOptions) {
   // automatic middlewares
   // logger.group('Fastay Auto-Middlewares');
   const isMiddleware = await loadFastayMiddlewares(app);
-
+  if (!opts?.expressOptions?.jsonOptions) {
+    app.use(express.json({ limit: '10mb' }));
+  }
   // health check
   app.get('/_health', (_, res) => res.json({ ok: true }));
 
@@ -424,7 +426,7 @@ export async function createApp(opts?: CreateAppOptions) {
       );
       res.status(500).json({
         error: 'Internal Server Error',
-        ...(process.env.NODE_ENV === 'development' && { detail: err.message })
+        ...(process.env.NODE_ENV === 'development' && { detail: err.message }),
       });
     });
   }
@@ -437,11 +439,11 @@ export async function createApp(opts?: CreateAppOptions) {
   app.use((req: Request, res: Response) => {
     res.status(404).json({
       error: 'Not Found',
-      path: req.originalUrl
+      path: req.originalUrl,
     });
   });
 
-  server.listen(port);
+  // server.listen(port);
   // app.use(errorHandler);
 
   const time = logger.timeEnd(start);

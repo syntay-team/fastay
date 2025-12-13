@@ -130,9 +130,9 @@ function getMime(filePath: string): string {
 
 /** Highly optimized handler with fewer branches. */
 function wrapHandler(fn: (req: Request, res?: Response) => Promise<any> | any) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (request: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await (fn.length >= 2 ? fn(req, res) : fn(req));
+      const result = await (fn.length >= 2 ? fn(request, res) : fn(request));
 
       // If response has already been sent, exit
       if (res.headersSent || result === undefined) return;
@@ -163,7 +163,7 @@ function wrapHandler(fn: (req: Request, res?: Response) => Promise<any> | any) {
             }
           }
 
-          // Redirections e files primeiro (mais comuns)
+          // Redirections e files
           if (response.redirect) {
             return res.redirect(response.status ?? 302, response.redirect);
           }
@@ -204,7 +204,7 @@ function wrapHandler(fn: (req: Request, res?: Response) => Promise<any> | any) {
     } catch (err: unknown) {
       const error = err as Error;
       logger.error(
-        `Handler Error [${req.method} ${req.path}]: ${error.message}`
+        `Handler Error [${request.method} ${request.path}]: ${error.message}`
       );
       next(err);
     }
