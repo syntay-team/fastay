@@ -153,7 +153,7 @@ export async function loadApiRoutes(app, baseRoute, apiDirectory) {
     }
     const files = collectFiles(apiDir);
     let count = 0;
-    logger.group('🚀 Loading Routes');
+    logger.group('Loading Routes');
     // Optimized parallel loading
     const modulePromises = files.map(async (file) => {
         try {
@@ -180,7 +180,7 @@ export async function loadApiRoutes(app, baseRoute, apiDirectory) {
         const route = filePathToRoute(apiDir, file, baseRoute);
         if (!route)
             continue;
-        const routeRouter = Router();
+        const routeRouter = Router({ mergeParams: true });
         let hasRoutes = false;
         // Register HTTP methods
         for (const method of HTTP_METHODS) {

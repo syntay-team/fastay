@@ -402,8 +402,7 @@ export async function createApp(opts?: CreateAppOptions) {
   });
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    opts?.powered 
-   && res.setHeader('X-Powered-By', 'Syntay Engine');
+    opts?.powered && res.setHeader('X-Powered-By', 'Syntay Engine');
 
     // Cookies parsing otimizado
     (req as any).cookies = new RequestCookies(req.headers.cookie);

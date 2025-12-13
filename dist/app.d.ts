@@ -130,6 +130,12 @@ export type CreateAppOptions = {
      * but before route mounting.
      */
     middlewares?: MiddlewareMap;
+    /**
+     * Controls the display of the X-Powered-By header in HTTP responses.
+     *
+     * **With `powered: true` (default):
+     **/
+    powered?: boolean;
 };
 export declare function createApp(opts?: CreateAppOptions): Promise<{
     app: import("express-serve-static-core").Express;
