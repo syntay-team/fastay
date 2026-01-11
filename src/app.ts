@@ -1,18 +1,18 @@
-import express, { Request, Response, NextFunction } from 'express';
-import { createServer, Server } from 'node:http';
-import path from 'path';
-import { loadApiRoutes } from './router.js';
+import express, { Request, Response, NextFunction } from "express";
+import { createServer, Server } from "node:http";
+import path from "path";
+import { loadApiRoutes } from "./router.js";
 import {
   MiddlewareMap,
   loadFastayMiddlewares,
   createMiddleware,
-} from './middleware.js';
-import { logger } from './logger.js';
-import { printBanner } from './banner.js';
-import type { ServeStaticOptions } from 'serve-static';
+} from "./middleware.js";
+import { logger } from "./logger.js";
+import { printBanner } from "./banner.js";
+import type { ServeStaticOptions } from "serve-static";
 
-import { RequestCookies } from './utils/cookies.js';
-import { formDataMiddleware } from './utils/formDataMiddleware.js';
+import { RequestCookies } from "./utils/cookies.js";
+import { formDataMiddleware } from "./utils/formDataMiddleware.js";
 
 /**
  * Express configuration options applied automatically by Fastay
@@ -201,54 +201,54 @@ export type CreateAppOptions = {
  */
 
 /** pre-compiled CORS */
-function createCorsHandler(opts?: CreateAppOptions['enableCors']) {
+function createCorsHandler(opts?: CreateAppOptions["enableCors"]) {
   if (!opts) return null;
 
   const {
     allowAnyOrigin = false,
     cookieOrigins = [],
     credentials = false,
-    methods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    headers = 'Content-Type, Authorization',
+    methods = "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    headers = "Content-Type, Authorization",
     exposedHeaders,
     maxAge,
   } = opts;
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Determine the origin in an optimized way.
-    let origin = '*';
+    let origin = "*";
 
     if (credentials && cookieOrigins.length > 0) {
       const requestOrigin = req.headers.origin;
       if (requestOrigin && cookieOrigins.includes(requestOrigin)) {
         origin = requestOrigin;
       } else {
-        origin = '';
+        origin = "";
       }
     } else if (!credentials && allowAnyOrigin) {
-      origin = '*';
+      origin = "*";
     }
 
     const corsHeaders: Record<string, string> = {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Credentials': credentials ? 'true' : 'false',
-      'Access-Control-Allow-Methods': methods,
-      'Access-Control-Allow-Headers': headers,
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Credentials": credentials ? "true" : "false",
+      "Access-Control-Allow-Methods": methods,
+      "Access-Control-Allow-Headers": headers,
     };
 
     if (exposedHeaders) {
-      corsHeaders['Access-Control-Expose-Headers'] = exposedHeaders;
+      corsHeaders["Access-Control-Expose-Headers"] = exposedHeaders;
     }
 
     if (maxAge) {
-      corsHeaders['Access-Control-Max-Age'] = maxAge.toString();
+      corsHeaders["Access-Control-Max-Age"] = maxAge.toString();
     }
 
     for (const [key, value] of Object.entries(corsHeaders)) {
       res.setHeader(key, value);
     }
 
-    if (req.method === 'OPTIONS') {
+    if (req.method === "OPTIONS") {
       return res.sendStatus(204);
     }
 
@@ -262,10 +262,10 @@ export async function createApp(opts?: CreateAppOptions) {
   printBanner();
 
   // logger.group('Fastay');
-  logger.info('Initializing server...');
+  logger.info("Initializing server...");
 
-  const apiDir = opts?.apiDir ?? path.resolve(process.cwd(), 'src', 'api');
-  const baseRoute = opts?.baseRoute ?? '/api';
+  const apiDir = opts?.apiDir ?? path.resolve(process.cwd(), "src", "api");
+  const baseRoute = opts?.baseRoute ?? "/api";
   const port = opts?.port ?? 5000;
 
   logger.success(`API directory: ${apiDir}`);
@@ -276,22 +276,19 @@ export async function createApp(opts?: CreateAppOptions) {
 
   if (opts?.expressOptions) {
     for (const [key, value] of Object.entries(opts.expressOptions)) {
-      // Se for array → assume middleware global
       if (Array.isArray(value)) {
         value.forEach((mw) => app.use(mw));
-      }
-      // Se o app tiver método com esse nome
-      else if (typeof (app as any)[key] === 'function') {
+      } else if (typeof (app as any)[key] === "function") {
         // TS-safe
         ((app as any)[key] as Function)(value);
       }
       // special cases
-      else if (key === 'static' && value && typeof value === 'object') {
+      else if (key === "static" && value && typeof value === "object") {
         const v = value as { path: string; options?: any };
         app.use(express.static(v.path, v.options));
-      } else if (key === 'jsonOptions') {
+      } else if (key === "jsonOptions") {
         app.use(express.json(value as any));
-      } else if (key === 'urlencodedOptions') {
+      } else if (key === "urlencodedOptions") {
         app.use(express.urlencoded(value as any));
       }
     }
@@ -301,7 +298,7 @@ export async function createApp(opts?: CreateAppOptions) {
     logger.success(`Server running at http://localhost:${port}${baseRoute}`);
   });
 
-  // CORS handler pré-compilado
+  // CORS handler
   const corsHandler = createCorsHandler(opts?.enableCors);
   if (corsHandler) {
     app.use(corsHandler);
@@ -312,7 +309,7 @@ export async function createApp(opts?: CreateAppOptions) {
 
   // Fastay middlewares
   if (opts?.middlewares) {
-    logger.group('Fastay Middlewares');
+    logger.group("Fastay Middlewares");
     const apply = createMiddleware(opts.middlewares);
     apply(app);
   }
@@ -320,17 +317,17 @@ export async function createApp(opts?: CreateAppOptions) {
   // Auto middlewares
   await loadFastayMiddlewares(app);
 
-  // Health check otimizado
-  app.get('/health', (_, res) => {
-    res.setHeader('Content-Type', 'application/json');
+  // Health check
+  app.get("/health", (_, res) => {
+    res.setHeader("Content-Type", "application/json");
     res.send('{"ok":true}');
   });
 
-  // external middlewares
+  // External middlewares
   if (opts?.expressOptions?.middlewares) {
-    logger.group('Express Middlewares');
+    logger.group("Express Middlewares");
     for (const mw of opts.expressOptions.middlewares) {
-      logger.gear(`Loaded: ${mw.name || 'anonymous'}`);
+      logger.gear(`Loaded: ${mw.name || "anonymous"}`);
       app.use(mw);
     }
   }
@@ -340,7 +337,7 @@ export async function createApp(opts?: CreateAppOptions) {
 
   // Fastay middlewares
   if (opts?.middlewares) {
-    logger.group('Fastay Middlewares');
+    logger.group("Fastay Middlewares");
     const apply = createMiddleware(opts.middlewares);
     apply(app);
   }
@@ -349,84 +346,84 @@ export async function createApp(opts?: CreateAppOptions) {
   // logger.group('Fastay Auto-Middlewares');
   const isMiddleware = await loadFastayMiddlewares(app);
   if (!opts?.expressOptions?.jsonOptions) {
-    app.use(express.json({ limit: '10mb' }));
+    app.use(express.json({ limit: "10mb" }));
   }
   // health check
-  app.get('/_health', (_, res) => res.json({ ok: true }));
+  app.get("/_health", (_, res) => res.json({ ok: true }));
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('X-Powered-By', 'Syntay Engine');
+    res.setHeader("X-Powered-By", "Syntay Engine");
     (req as any).cookies = new RequestCookies(req.headers.cookie);
 
     const corsOpts = opts?.enableCors || {};
 
-    // Determina a origem
-    let origin = '*';
+    // Determine the origin
+    let origin = "*";
 
     if (corsOpts.credentials && corsOpts.cookieOrigins?.length) {
-      // Se a origem estiver na lista de cookieOrigins, permite cookies
+      // If the origin is in the cookieOrigins list, cookies are allowed.
       if (
         req.headers.origin &&
         corsOpts.cookieOrigins.includes(req.headers.origin)
       ) {
         origin = req.headers.origin;
       } else {
-        origin = ''; // bloqueia cookies para outras origens
+        origin = ""; // blocks cookies from other sources
       }
     } else if (!corsOpts.credentials && corsOpts.allowAnyOrigin) {
-      origin = '*';
+      origin = "*";
     }
 
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader(
-      'Access-Control-Allow-Credentials',
-      corsOpts.credentials ? 'true' : 'false'
+      "Access-Control-Allow-Credentials",
+      corsOpts.credentials ? "true" : "false"
     );
     res.setHeader(
-      'Access-Control-Allow-Methods',
-      corsOpts.methods || 'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+      "Access-Control-Allow-Methods",
+      corsOpts.methods || "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     );
     res.setHeader(
-      'Access-Control-Allow-Headers',
-      corsOpts.headers || 'Content-Type, Authorization'
+      "Access-Control-Allow-Headers",
+      corsOpts.headers || "Content-Type, Authorization"
     );
 
     if (corsOpts.exposedHeaders) {
-      res.setHeader('Access-Control-Expose-Headers', corsOpts.exposedHeaders);
+      res.setHeader("Access-Control-Expose-Headers", corsOpts.exposedHeaders);
     }
 
     if (corsOpts.maxAge) {
-      res.setHeader('Access-Control-Max-Age', corsOpts.maxAge.toString());
+      res.setHeader("Access-Control-Max-Age", corsOpts.maxAge.toString());
     }
 
-    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    if (req.method === "OPTIONS") return res.sendStatus(204);
     next();
   });
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    opts?.powered && res.setHeader('X-Powered-By', 'Syntay Engine');
+    opts?.powered && res.setHeader("X-Powered-By", "Syntay Engine");
 
-    // Cookies parsing otimizado
+    // Optimized cookie parsing
     (req as any).cookies = new RequestCookies(req.headers.cookie);
 
     next();
   });
 
-  // Carregamento de rotas
+  // Route loading
   const totalRoutes = await loadApiRoutes(app, baseRoute, apiDir);
 
-  // Error handler deve vir depois das rotas
+  // The error handler should come after the routes.
   if (opts?.expressOptions?.errorHandler) {
     app.use(opts.expressOptions.errorHandler);
   } else {
-    // Error handler padrão otimizado
+    // Optimized default error handler
     app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       logger.error(
         `Unhandled Error [${req.method} ${req.path}]: ${err.message}`
       );
       res.status(500).json({
-        error: 'Internal Server Error',
-        ...(process.env.NODE_ENV === 'development' && { detail: err.message }),
+        error: "Internal Server Error",
+        ...(process.env.NODE_ENV === "development" && { detail: err.message }),
       });
     });
   }
@@ -435,10 +432,10 @@ export async function createApp(opts?: CreateAppOptions) {
   // // logger.group('Routes Loaded');
   // const totalRoutes = await loadApiRoutes(app, baseRoute, apiDir);
 
-  // 404 handler otimizado - CORRIGIDO: Não usar '*'
+  // 404 handler
   app.use((req: Request, res: Response) => {
     res.status(404).json({
-      error: 'Not Found',
+      error: "Not Found",
       path: req.originalUrl,
     });
   });
@@ -450,9 +447,9 @@ export async function createApp(opts?: CreateAppOptions) {
   logger.success(`Total routes loaded: ${totalRoutes}`);
   logger.success(`Boot completed in ${time}ms`);
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     const used = process.memoryUsage();
-    logger.info(`Memory: ${Math.round(used.heapUsed / 1024 / 1024)}MB`);
+    // logger.info(`Memory: ${Math.round(used.heapUsed / 1024 / 1024)}MB`);
   }
 
   return { app, server };

@@ -1,6 +1,6 @@
 {
   "name": "@syntay/fastay",
-  "version": "0.2.8",
+  "version": "1.0.0",
   "description": "Framework backend moderno baseado em Express.js, para criar APIs rapidamente",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,9 +11,17 @@
     "api",
     "typescript",
     "fastay",
+    "fastayjs",
     "framework"
   ],
   "author": "Syntay team <contact@syntay.site>",
+  "contributors": [
+    {
+      "name": "Djerry Geeremias",
+      "email": "djerrygeremias@gmail.com",
+      "url": "https://github.com/Djerry-dev"
+    }
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

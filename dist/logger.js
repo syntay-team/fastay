@@ -1,24 +1,21 @@
-import pino from 'pino';
-import pretty from 'pino-pretty';
-// stream configurado para remover INFO:, timestamps e etc
+import pino from "pino";
+import pretty from "pino-pretty";
 const stream = pretty({
     colorize: true,
-    ignore: 'pid,hostname,time,level',
+    ignore: "pid,hostname,time,level",
     levelFirst: false,
-    // Remove "INFO: " antes da msg
-    messageKey: 'msg',
-    // Maneira correta TS-safe
+    // Remove "INFO: "
+    messageKey: "msg",
     messageFormat: (log, messageKey) => {
         const msg = log[messageKey];
-        return typeof msg === 'string' ? msg : String(msg);
+        return typeof msg === "string" ? msg : String(msg);
     },
 });
 const base = pino({
-    level: 'info',
+    level: "info",
     timestamp: false, // remove [HH:mm:ss]
     base: undefined, // remove pid, hostname
 }, stream);
-// helpers para cores ANSI
 const colors = {
     white: (s) => `\x1b[37m${s}\x1b[0m`,
     green: (s) => `\x1b[32m${s}\x1b[0m`,
@@ -26,26 +23,25 @@ const colors = {
     cyan: (s) => `\x1b[36m${s}\x1b[0m`,
     gray: (s) => `\x1b[90m${s}\x1b[0m`,
 };
-// emojis Fastay
 const ICONS = {
-    info: '○',
-    success: '✓',
-    error: '✗',
-    gear: '⚙️',
+    info: "○",
+    success: "✓",
+    error: "✗",
+    gear: "⚙️",
 };
 export const logger = {
     info: (msg) => base.info(` ${colors.white(ICONS.info)} ${colors.white(msg)}`),
-    warn: (msg) => base.info(` ${colors.red('⚠')} ${colors.white(msg)}`),
+    warn: (msg) => base.info(` ${colors.red("⚠")} ${colors.white(msg)}`),
     error: (msg) => base.info(` ${colors.red(ICONS.error)} ${colors.white(msg)}`),
     success: (msg) => base.info(` ${colors.green(ICONS.success)} ${colors.white(msg)}`),
     gear: (msg) => base.info(` ${ICONS.gear}  ${colors.white(msg)}`),
     space(lines = 1) {
         for (let i = 0; i < lines; i++)
-            base.info(' ');
+            base.info(" ");
     },
     group(title) {
         this.space();
-        base.info('');
+        base.info("");
         base.info(colors.cyan(title));
         // this.space();
     },

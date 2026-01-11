@@ -1,7 +1,7 @@
-import express from 'express';
-import { Server } from 'node:http';
-import { MiddlewareMap } from './middleware.js';
-import type { ServeStaticOptions } from 'serve-static';
+import express from "express";
+import { Server } from "node:http";
+import { MiddlewareMap } from "./middleware.js";
+import type { ServeStaticOptions } from "serve-static";
 /**
  * Express configuration options applied automatically by Fastay
  * before internal middleware and route loading.
