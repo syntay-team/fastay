@@ -332,24 +332,9 @@ export async function createApp(opts?: CreateAppOptions) {
     }
   }
 
-  // FormData middleware
-  app.use(formDataMiddleware());
-
-  // Fastay middlewares
-  if (opts?.middlewares) {
-    logger.group("Fastay Middlewares");
-    const apply = createMiddleware(opts.middlewares);
-    apply(app);
-  }
-
-  // automatic middlewares
-  // logger.group('Fastay Auto-Middlewares');
-  const isMiddleware = await loadFastayMiddlewares(app);
   if (!opts?.expressOptions?.jsonOptions) {
     app.use(express.json({ limit: "10mb" }));
   }
-  // health check
-  app.get("/_health", (_, res) => res.json({ ok: true }));
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader("X-Powered-By", "Syntay Engine");

@@ -1,8 +1,8 @@
-import path from 'path';
-import fs from 'fs';
-import { pathToFileURL } from 'url';
-import { logger } from './logger.js';
-import { wrapMiddleware } from './utils/wrapMiddleware.js';
+import path from "path";
+import fs from "fs";
+import { pathToFileURL } from "url";
+import { logger } from "./logger.js";
+import { wrapMiddleware } from "./utils/wrapMiddleware.js";
 /**
  * Creates a Fastay middleware loader.
  *
@@ -25,7 +25,7 @@ import { wrapMiddleware } from './utils/wrapMiddleware.js';
  * ```
  */
 export function createMiddleware(map) {
-    logger.info('Loading Fastay core middleware...');
+    // logger.info('Loading Fastay core middleware...');
     return (app) => {
         for (const [route, middlewares] of Object.entries(map)) {
             for (const mw of middlewares) {
@@ -36,18 +36,18 @@ export function createMiddleware(map) {
     };
 }
 export async function loadFastayMiddlewares(app) {
-    const isDev = process.env.NODE_ENV !== 'production';
-    const mwDir = path.resolve(process.cwd(), isDev ? 'src/middlewares' : 'dist/middlewares');
-    const file = path.join(mwDir, isDev ? 'middleware.ts' : 'middleware.js');
+    const isDev = process.env.NODE_ENV !== "production";
+    const mwDir = path.resolve(process.cwd(), isDev ? "src/middlewares" : "dist/middlewares");
+    const file = path.join(mwDir, isDev ? "middleware.ts" : "middleware.js");
     if (!fs.existsSync(file))
         return;
     const mod = await import(pathToFileURL(file).href);
     if (!mod.middleware)
         return;
-    logger.group('Fastay Auto-Middlewares');
-    if (typeof mod.middleware === 'function') {
+    logger.group("Fastay Auto-Middlewares");
+    if (typeof mod.middleware === "function") {
         mod.middleware(app);
-        logger.info('Loading Fastay core middleware...');
+        logger.info("Loaded Fastay core middleware...");
     }
     else {
         const map = mod.middleware;

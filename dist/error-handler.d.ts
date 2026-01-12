@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 /**
- * Handler de erros otimizado para Fastay
+ * Handler error
  */
 export declare function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void | Response<any, Record<string, any>>;
 /**
- * Factory para criar error handlers customizados
+ * Factory
  */
 export declare function createErrorHandler(options?: {
     logDetails?: boolean;

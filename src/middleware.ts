@@ -1,10 +1,10 @@
-import { Application, Response, NextFunction } from 'express';
-import path from 'path';
-import fs from 'fs';
-import { pathToFileURL } from 'url';
-import { logger } from './logger.js';
-import { wrapMiddleware } from './utils/wrapMiddleware.js';
-import { Request } from './types/request.js';
+import { Application, Response, NextFunction } from "express";
+import path from "path";
+import fs from "fs";
+import { pathToFileURL } from "url";
+import { logger } from "./logger.js";
+import { wrapMiddleware } from "./utils/wrapMiddleware.js";
+import { Request } from "./types/request.js";
 
 type MiddlewareFn = (req: Request, res: Response, next: NextFunction) => any;
 
@@ -67,42 +67,42 @@ export type MiddlewareMap = Record<string, MiddlewareFn[]>;
  * ```
  */
 export function createMiddleware(map: Record<string, MiddlewareFn[]>) {
-  logger.info('Loading Fastay core middleware...');
+  // logger.info('Loading Fastay core middleware...');
   return (app: Application) => {
     for (const [route, middlewares] of Object.entries(map)) {
       for (const mw of middlewares) {
         const wrapped = wrapMiddleware(mw);
 
-        app.use(route, wrapped as unknown as import('express').RequestHandler);
+        app.use(route, wrapped as unknown as import("express").RequestHandler);
       }
     }
   };
 }
 
 export async function loadFastayMiddlewares(app: Application) {
-  const isDev = process.env.NODE_ENV !== 'production';
+  const isDev = process.env.NODE_ENV !== "production";
   const mwDir = path.resolve(
     process.cwd(),
-    isDev ? 'src/middlewares' : 'dist/middlewares'
+    isDev ? "src/middlewares" : "dist/middlewares"
   );
 
-  const file = path.join(mwDir, isDev ? 'middleware.ts' : 'middleware.js');
+  const file = path.join(mwDir, isDev ? "middleware.ts" : "middleware.js");
   if (!fs.existsSync(file)) return;
 
   const mod = await import(pathToFileURL(file).href);
 
   if (!mod.middleware) return;
 
-  logger.group('Fastay Auto-Middlewares');
+  logger.group("Fastay Auto-Middlewares");
 
-  if (typeof mod.middleware === 'function') {
+  if (typeof mod.middleware === "function") {
     mod.middleware(app);
-    logger.info('Loading Fastay core middleware...');
+    logger.info("Loaded Fastay core middleware...");
   } else {
     const map = mod.middleware as Record<string, any[]>;
     for (const [route, middlewares] of Object.entries(map)) {
       for (const mw of middlewares) {
-        app.use(route, mw as unknown as import('express').RequestHandler);
+        app.use(route, mw as unknown as import("express").RequestHandler);
       }
     }
   }

@@ -1,5 +1,5 @@
-import { Application, Response, NextFunction } from 'express';
-import { Request } from './types/request.js';
+import { Application, Response, NextFunction } from "express";
+import { Request } from "./types/request.js";
 type MiddlewareFn = (req: Request, res: Response, next: NextFunction) => any;
 /**
  * Defines a map of routes and the middleware functions that Fastay

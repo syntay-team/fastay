@@ -1,15 +1,15 @@
 import { logger } from "./logger.js";
 import fs from "fs/promises";
 import path from "path";
-// Cache para arquivos lidos (evita leitura repetida)
+// Cache for read files
 const fileCache = new Map();
 /**
- * Extrai informações do stack trace de forma otimizada
+ * Extracts information from the stack trace in an optimized way.
  */
 function extractErrorInfo(err) {
     if (!err.stack)
         return null;
-    // Pega a primeira linha relevante do stack (ignora a linha do erro)
+    // Get the first relevant line from the stack.
     const stackLines = err.stack.split("\n");
     const relevantLine = stackLines.find((line) => line.includes("(") &&
         line.includes(".ts:") &&
@@ -17,7 +17,7 @@ function extractErrorInfo(err) {
         !line.includes("Error:"));
     if (!relevantLine)
         return null;
-    // Regex otimizado para capturar arquivo, linha e coluna
+    // Optimized regex to capture file, line and column.
     const match = relevantLine.match(/\((.*?):(\d+):(\d+)\)/);
     if (!match)
         return null;
@@ -25,23 +25,23 @@ function extractErrorInfo(err) {
     return { file, line, column, snippet: "" };
 }
 /**
- * Lê snippet de código de forma otimizada com cache
+ * Reads code snippets in an optimized way with caching.
  */
 async function getCodeSnippet(filePath, lineNumber) {
     try {
-        // Normalizar caminho do arquivo
+        // Normalize file path
         const normalizedPath = path.resolve(filePath);
-        // Verificar cache
+        // Check cache
         if (fileCache.has(normalizedPath)) {
             const content = fileCache.get(normalizedPath);
             const lines = content.split("\n");
             return lines[lineNumber - 1]?.trim() || "";
         }
-        // Ler arquivo apenas se for um arquivo .ts/.js do projeto
+        // Read the file only if it is a .ts/.js file from the project.
         if (!normalizedPath.includes("node_modules") &&
             (normalizedPath.endsWith(".ts") || normalizedPath.endsWith(".js"))) {
             const content = await fs.readFile(normalizedPath, "utf-8");
-            // Cache apenas em desenvolvimento
+            // Cache only in development
             if (process.env.NODE_ENV === "development") {
                 fileCache.set(normalizedPath, content);
             }
@@ -50,12 +50,12 @@ async function getCodeSnippet(filePath, lineNumber) {
         }
     }
     catch {
-        // Ignorar erros de leitura
+        // Ignore reading errors
     }
     return "";
 }
 /**
- * Log de erro otimizado
+ * Optimized error logging
  */
 function logError(err, route, fileInfo) {
     const isDev = process.env.NODE_ENV === "development";
@@ -65,49 +65,46 @@ function logError(err, route, fileInfo) {
         if (fileInfo) {
             logger.error(`Location: ${fileInfo}`);
         }
-        // Stack trace apenas para erros não esperados
+        // Stack trace only for unexpected errors
         if (err instanceof TypeError || err instanceof ReferenceError) {
             logger.raw(err.stack?.split("\n").slice(0, 5).join("\n") || "");
         }
     }
     else {
-        // Log minimalista em produção
+        // Minimalist log in production
         logger.error(`[${route}] ${err.name}: ${err.message}`);
-        // Log detalhado apenas para erros críticos
+        // Detailed log for critical errors only
         if (err instanceof SyntaxError || err.message?.includes("Unexpected")) {
             logger.raw(err.stack?.split("\n")[0] || "");
         }
     }
 }
 /**
- * Handler de erros otimizado para Fastay
+ * Handler error
  */
 export function errorHandler(err, req, res, next) {
-    // Se headers já foram enviados, delegar para próximo handler
+    // If headers have already been sent, delegate to the next handler.
     if (res.headersSent) {
         return next(err);
     }
     const route = `${req.method} ${req.originalUrl}`;
     const error = err instanceof Error ? err : new Error(String(err));
-    // Informações adicionais apenas em desenvolvimento
     let fileInfo = "";
     if (process.env.NODE_ENV === "development") {
         const errorInfo = extractErrorInfo(error);
         if (errorInfo) {
             fileInfo = `${path.basename(errorInfo.file)}:${errorInfo.line}:${errorInfo.column}`;
-            // Carregar snippet de forma assíncrona
+            // Load snippet asynchronously
             getCodeSnippet(errorInfo.file, parseInt(errorInfo.line))
                 .then((snippet) => {
                 if (snippet) {
                     logger.error(`Code: ${snippet}`);
                 }
             })
-                .catch(() => { }); // Ignorar erros de leitura
+                .catch(() => { }); // Ignore reading errors
         }
     }
-    // Log otimizado
     logError(error, route, fileInfo);
-    // Determinar status code
     let statusCode = 500;
     let errorMessage = "Internal Server Error";
     if (error instanceof SyntaxError || error.message?.includes("Unexpected")) {
@@ -118,16 +115,13 @@ export function errorHandler(err, req, res, next) {
         statusCode = 422;
         errorMessage = "Validation Failed";
     }
-    // Resposta otimizada
     const isDev = process.env.NODE_ENV === "development";
     res.status(statusCode);
-    // JSON response otimizado
     const response = {
         error: errorMessage,
         status: statusCode,
         path: req.originalUrl,
     };
-    // Detalhes apenas em desenvolvimento
     if (isDev) {
         response.message = error.message;
         if (error.stack && statusCode === 500) {
@@ -137,15 +131,13 @@ export function errorHandler(err, req, res, next) {
             response.location = fileInfo;
         }
     }
-    // Cabeçalhos de segurança
     res.setHeader("Content-Type", "application/json");
     res.setHeader("X-Error-Type", error.name);
-    // Cache-control para respostas de erro
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     return res.json(response);
 }
 /**
- * Factory para criar error handlers customizados
+ * Factory
  */
 export function createErrorHandler(options) {
     const opts = {
@@ -159,11 +151,9 @@ export function createErrorHandler(options) {
             return next(err);
         const error = err instanceof Error ? err : new Error(String(err));
         const route = `${req.method} ${req.originalUrl}`;
-        // Log customizado
         if (opts.logDetails) {
             logger.error(`[${route}] ${error.name}: ${error.message}`);
         }
-        // Status code customizado
         let statusCode = 500;
         if (error.name in opts.customMessages) {
             statusCode = 400;
