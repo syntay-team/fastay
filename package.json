@@ -1,6 +1,6 @@
 {
   "name": "@syntay/fastay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Framework backend moderno baseado em Express.js, para criar APIs rapidamente",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,7 +27,7 @@
     "type": "git",
     "url": "https://github.com/syntay-team/fastay.git"
   },
-  "homepage": "https://github.com/syntay-team/fastay#readme",
+  "homepage": "https://fastay.syntay.site",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "prepare": "npm run build"

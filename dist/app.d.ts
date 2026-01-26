@@ -77,6 +77,11 @@ export type CreateAppOptions = {
      */
     baseRoute?: string;
     /**
+     * Application mode
+     * Default: "dev"
+     */
+    mode?: "dev" | "prod" | "test";
+    /**
      * Configuration to enable CORS (Cross-Origin Resource Sharing) in Fastay.
      */
     enableCors?: {

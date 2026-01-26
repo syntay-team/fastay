@@ -99,6 +99,12 @@ export type CreateAppOptions = {
   baseRoute?: string;
 
   /**
+   * Application mode
+   * Default: "dev"
+   */
+  mode?: "dev" | "prod" | "test";
+
+  /**
    * Configuration to enable CORS (Cross-Origin Resource Sharing) in Fastay.
    */
   enableCors?: {
@@ -267,6 +273,7 @@ export async function createApp(opts?: CreateAppOptions) {
   const apiDir = opts?.apiDir ?? path.resolve(process.cwd(), "src", "api");
   const baseRoute = opts?.baseRoute ?? "/api";
   const port = opts?.port ?? 5000;
+  const mode = opts?.mode ?? "dev";
 
   logger.success(`API directory: ${apiDir}`);
   logger.success(`Base route: ${baseRoute}`);
@@ -294,9 +301,13 @@ export async function createApp(opts?: CreateAppOptions) {
     }
   }
 
-  server.listen(port, () => {
-    logger.success(`Server running at http://localhost:${port}${baseRoute}`);
-  });
+  if (mode == "dev" || mode == "prod") {
+    server.listen(port, () => {
+      logger.success(`Server running at http://localhost:${port}${baseRoute}`);
+    });
+  } else {
+    logger.info("Test mode: server.listen skipped");
+  }
 
   // CORS handler
   const corsHandler = createCorsHandler(opts?.enableCors);
