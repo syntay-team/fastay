@@ -19,7 +19,7 @@ Fastay is a modern backend framework built on Express.js, designed for fast, pre
 
 The complete documentation is available at:
 
-[https://fastay.syntay.site](https://fastay.syntay.site)
+[https://fastay.vercel.app](https://fastay.vercel.app)
 
 ## Quick Start
 
